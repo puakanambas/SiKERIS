@@ -1,2029 +1,1 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SiKERIS - Satpol PP Anambas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Library untuk Screenshot Laporan (html2canvas) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <style>
-        /* --- 1. CORE VARIABLES (PALET SATPOL) --- */
-        :root {
-            --primary: #1b4d3e; 
-            --primary-soft: #2d7a61;
-            --accent: #d4c496; 
-            --accent-dark: #b0a072;
-            --accent-grad: linear-gradient(135deg, #d4c496, #b0a072);
-            --bg: #f4f4f0; 
-            --surface: #ffffff;
-            --text: #1b4d3e;
-            --text-sub: #5f7d75;
-            --line: #e0e0d8; 
-            --success: #2d7a61; 
-            --danger: #ef4444; 
-            --info: #3b82f6;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- 2. LOGIN SCREEN --- */
-        #login-overlay {
-            position: fixed; inset: 0; background: var(--primary); z-index: 999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 2rem; transition: 0.3s;
-        }
-        .login-card {
-            background: var(--bg); width: 100%; max-width: 350px; padding: 2rem; border-radius: 24px;
-            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 2px solid var(--accent);
-        }
-        .lc-logo { font-size: 3rem; margin-bottom: 1rem; }
-        .lc-title { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }
-        .lc-sub { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 2rem; font-weight: 600; }
-
-        /* --- 3. HEADER --- */
-        .app-header {
-            background: var(--primary); padding: 2rem 1.5rem 3.5rem;
-            border-bottom-left-radius: 2rem; border-bottom-right-radius: 2rem;
-            position: relative; z-index: 10; flex-shrink: 0;
-            box-shadow: 0 10px 25px -10px rgba(27, 77, 62, 0.3);
-        }
-        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .brand-text { flex: 1; }
-        .brand-text h1 { color: white; font-size: 1.8rem; font-weight: 800; line-height: 1; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .brand-text span { color: var(--accent); font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }
-        .brand-sub { color: rgba(255,255,255,0.8); font-size: 0.65rem; font-weight: 500; line-height: 1.3; max-width: 200px; }
-        
-        .btn-header-icon { 
-            background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-            z-index: 20; position: relative; transition: 0.2s; width: 38px; height: 38px; color: var(--accent);
-        }
-        .btn-header-icon:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
-        .btn-header-icon svg { width: 20px; height: 20px; stroke-width: 2; }
-
-        /* --- 4. STATS & CHART --- */
-        #home-widgets { display: block; }
-        
-        .stats-wrapper {
-            padding: 0 1.5rem; margin-top: -2.5rem; position: relative; z-index: 15;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-shrink: 0;
-        }
-        .stat-card {
-            background: var(--surface); padding: 1rem; border-radius: 1rem;
-            box-shadow: 0 10px 20px -5px rgba(27, 77, 62, 0.08); border: 1px solid white;
-            display: flex; flex-direction: column; height: 90px; justify-content: space-between;
-        }
-        .stat-head { font-size: 0.65rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-        .stat-val { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
-        .stat-badge { align-self: flex-start; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: var(--success); font-weight: 700; }
-        
-        .stat-today .stat-val { color: var(--accent-dark); }
-        .stat-today .stat-badge { background: var(--bg); color: var(--primary); border: 1px solid var(--accent); }
-
-        /* CHART CONTAINER */
-        .chart-container {
-            margin: 1rem 1.5rem; background: var(--surface); border-radius: 1rem; padding: 1.5rem;
-            border: 1px solid var(--line); box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            display: flex; flex-direction: column; align-items: center; position: relative;
-        }
-        .chart-wrapper { position: relative; width: 160px; height: 160px; margin-bottom: 1rem; }
-        canvas { width: 100%; height: 100%; transform: rotate(-90deg); }
-        .chart-center {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; pointer-events: none;
-        }
-        .cc-val { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
-        .cc-label { font-size: 0.6rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-        
-        .chart-legend { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; padding: 6px 10px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); }
-        .li-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; display: inline-block; }
-        .li-name { font-weight: 600; color: var(--text); flex: 1; }
-        .li-val { font-weight: 800; color: var(--primary); }
-
-
-        /* --- 5. CONTENT & LISTS --- */
-        .main-container { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 100px; scroll-behavior: smooth; }
-        .section-title { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; }
-        .section-title::before { content:''; width:4px; height:18px; background:var(--accent); border-radius:2px; }
-
-        /* FILTER BAR */
-        .filter-bar {
-            background: var(--surface); padding: 1rem; border-radius: 1rem; border: 1px solid var(--line);
-            margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-        .filter-row { display: flex; gap: 8px; }
-        .filter-input { flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.8rem; font-family: inherit; color: var(--text); background: var(--bg); }
-        .btn-filter { padding: 8px 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
-        .btn-recap { padding: 8px 12px; background: var(--accent); color: var(--primary); border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        /* NEW BUTTON FOR EXPORT */
-        .btn-export { padding: 8px 12px; background: #065f46; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center; }
-
-        /* Report Card */
-        .report-card {
-            background: var(--surface); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03); border: 1px solid var(--line); display: flex; gap: 12px;
-        }
-        .rc-date { min-width: 50px; text-align: center; border-right: 1px solid var(--line); padding-right: 12px; display: flex; flex-direction: column; justify-content: center; }
-        .rc-time { font-size: 0.9rem; font-weight: 800; color: var(--primary); }
-        .rc-day { font-size: 0.6rem; font-weight: 600; color: var(--text-sub); }
-        .rc-info { flex: 1; overflow: hidden; }
-        .rc-badge { font-size: 0.6rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 4px; background: var(--bg); color: var(--primary); text-transform: uppercase; border: 1px solid var(--line); }
-        .rc-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .rc-desc { font-size: 0.75rem; color: var(--text-sub); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        
-        /* Actions */
-        .card-actions { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--bg); margin-top: 8px; }
-        .action-btn { flex: 1; border: none; border-radius: 8px; padding: 6px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s; }
-        .action-btn:active { transform: scale(0.95); }
-        .btn-view { background: #e0f2fe; color: #0284c7; }
-        .btn-print { background: #dcfce7; color: #166534; }
-        .btn-edit { background: var(--bg); color: var(--accent-dark); border: 1px solid var(--accent); }
-        .btn-del { background: #fee2e2; color: #b91c1c; }
-
-        /* --- 6. SETTINGS & MANAGEMENT --- */
-        .tabs { display: flex; background: var(--surface); padding: 4px; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--line); }
-        .tab { flex: 1; padding: 10px; text-align: center; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; color: var(--text-sub); transition: 0.2s; }
-        .tab.active { background: var(--primary); color: var(--accent); }
-
-        .mgmt-item { display: flex; align-items: center; gap: 12px; background: var(--surface); padding: 1rem; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 10px; }
-        .mi-photo { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: var(--bg); border: 1px solid var(--line); }
-        .mi-info { flex: 1; }
-        .mi-name { font-weight: 800; font-size: 0.9rem; display: block; color: var(--primary); }
-        .mi-sub { font-size: 0.7rem; color: var(--text-sub); display: block; margin-top: 2px; }
-        .mc-actions { display: flex; gap: 5px; }
-        .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; }
-        .btn-icon:active { transform: scale(0.9); }
-        .btn-red { background: #fee2e2; color: #b91c1c; }
-        .btn-blue { background: #e0f2fe; color: #0284c7; }
-        .btn-yellow { background: var(--bg); color: var(--accent-dark); border: 1px solid var(--accent); }
-
-        /* --- 7. BOTTOM NAV --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: var(--surface);
-            display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -5px 20px rgba(27, 77, 62, 0.1); z-index: 40;
-            border-top: 1px solid var(--line);
-        }
-        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-sub); font-weight: 700; font-size: 0.65rem; width: 60px; cursor: pointer; transition: 0.2s; }
-        .nav-btn svg { width: 24px; height: 24px; stroke-width: 2.5; }
-        .nav-btn.active { color: var(--primary); }
-        
-        .fab-center {
-            position: relative; top: -25px; width: 60px; height: 60px; background: var(--accent-grad); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; color: var(--primary);
-            box-shadow: 0 10px 20px rgba(212, 196, 150, 0.6); border: 4px solid var(--bg); cursor: pointer; transition: 0.2s;
-        }
-        .fab-center:active { transform: scale(0.90); }
-
-        /* --- 8. MODALS (FIXED SCROLL) --- */
-        .modal { 
-            position: fixed; inset: 0; background: rgba(27, 77, 62, 0.9); z-index: 100; 
-            display: none; flex-direction: column; justify-content: flex-end;
-        }
-        .modal.show { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        .modal-content {
-            background: var(--bg); width: 100%; 
-            max-height: 92vh; 
-            border-top-left-radius: 2rem; border-top-right-radius: 2rem;
-            display: flex; flex-direction: column;
-            position: relative;
-        }
-        
-        .m-head { 
-            padding: 1.2rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--line); 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-top-left-radius: 2rem; border-top-right-radius: 2rem; 
-            flex-shrink: 0; 
-        }
-        .m-title { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
-        .m-close { background: var(--bg); border: 1px solid var(--line); width: 32px; height: 32px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        
-        .m-body { 
-            flex: 1; overflow-y: auto; padding: 1.5rem; 
-            padding-bottom: 5rem; 
-        } 
-
-        /* Inputs */
-        .form-group { margin-bottom: 1.2rem; }
-        .form-label { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 6px; display: block; }
-        .form-input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: inherit; font-size: 0.95rem; color: var(--primary); }
-        .form-input:focus { border-color: var(--accent); }
-        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: var(--accent); border: none; border-radius: 14px; font-weight: 800; text-transform: uppercase; margin-top: 1rem; cursor: pointer; transition: 0.2s; }
-        .btn-submit:active { transform: scale(0.98); opacity: 0.9; }
-
-        /* Photo Upload */
-        .photo-circle-large {
-            width: 120px; height: 120px; border-radius: 50%; background: var(--line); margin: 0 auto 2rem;
-            display: flex; align-items: center; justify-content: center; overflow: hidden; border: 5px solid var(--surface);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative; cursor: pointer;
-        }
-        .photo-circle-large img { width: 100%; height: 100%; object-fit: cover; }
-        .photo-overlay { position: absolute; bottom: 0; width: 100%; height: 30px; background: rgba(27, 77, 62, 0.8); display: flex; justify-content: center; align-items: center; }
-        .photo-overlay span { color: var(--accent); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
-
-        /* Menu Grid */
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .menu-item { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem 0.5rem; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }
-        .menu-item:active { background: var(--bg); border-color: var(--accent); transform: scale(0.96); }
-        .mi-icon { font-size: 1.8rem; }
-        .mi-text { font-size: 0.7rem; font-weight: 700; color: var(--primary); text-align: center; }
-
-        /* Detail Modal (UPDATED MODERN STYLE) */
-        .detail-row { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 12px; }
-        .dr-label { font-size: 0.65rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }
-        .dr-val { font-size: 0.95rem; color: var(--primary); font-weight: 600; margin-top: 4px; line-height: 1.4; }
-        
-        /* Modern Card in Modal */
-        .modern-modal-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border:1px solid var(--line); }
-        .mm-header { background: var(--primary); padding: 1.5rem; color: white; position: relative; overflow: hidden; }
-        .mm-header::after { content:''; position: absolute; bottom: -20px; right: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; }
-        .mm-header h4 { font-size: 0.8rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .mm-header h2 { font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
-        .mm-body { padding: 1.5rem; }
-        .mm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-        .mm-box { background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--line); }
-        .mm-box label { font-size: 0.65rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .mm-box span { font-size: 0.9rem; font-weight: 700; color: var(--primary); }
-        .mm-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }
-        .mm-photo { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
-        
-        /* Personnel List */
-        .personnel-list { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--surface); max-height: 150px; overflow-y: auto; }
-        .personnel-check { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
-        .personnel-check:last-child { border-bottom: none; }
-
-        /* LOADING SPINNER */
-        .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; display: none; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-
-        /* --- 9. PRINT CSS (LOGIC & STYLES) --- */
-        
-        /* Area cetak default tersembunyi */
-        #print-area-modern, #print-recap-area {
-            display: none;
-        }
-
-        @media print { 
-            /* Default margins - we handle internal padding */
-            @page { 
-                margin: 5mm; 
-            }
-            
-            /* --- FORCE COLOR & BACKGROUND --- */
-            body, html, * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            /* --- RESET SEMUA ELEMEN BODY --- */
-            body, html {
-                background: white !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                height: 100% !important; /* Ensure full height */
-                width: 100% !important;
-                overflow: visible !important; /* Allow scroll for print */
-                display: block !important;
-                position: static !important;
-            }
-
-            /* --- SEMBUNYIKAN UI APLIKASI UTAMA SECARA KESELURUHAN --- */
-            /* Menggunakan visibility hidden pada semua child body, 
-               lalu memunculkan kembali area cetak */
-            body > * {
-                display: none !important;
-            }
-
-            /* --- TAMPILKAN AREA CETAK YANG SESUAI --- */
-            /* Jika mode Single Report */
-            body.printing-single #print-area-modern { 
-                display: block !important; 
-                visibility: visible !important;
-                width: 100%;
-                background: white;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 99999;
-                padding: 0;
-            }
-
-            /* Jika mode Recap Report */
-            body.printing-recap #print-recap-area { 
-                display: block !important; 
-                visibility: visible !important;
-                width: 100%;
-                background: white;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 99999;
-                padding: 0;
-            }
-            
-            /* ================================================= */
-            /* === MODERN PRINT STYLE (KEKINIAN & ROBUST) ==== */
-            /* ================================================= */
-            
-            .mp-container {
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                color: #1e293b;
-                position: relative;
-                width: 100%;
-                max-width: 210mm; /* A4 width */
-                margin: 0 auto;
-                background: white;
-                padding: 10mm 15mm; /* Internal Padding */
-                box-sizing: border-box;
-            }
-
-            /* WATERMARK BACKGROUND */
-            .mp-watermark {
-                position: fixed;
-                top: 50%; left: 50%;
-                transform: translate(-50%, -50%) rotate(-15deg);
-                font-size: 7rem;
-                font-weight: 900;
-                color: rgba(27, 77, 62, 0.04); /* Primary color but very faint */
-                z-index: -1;
-                pointer-events: none;
-                white-space: nowrap;
-                text-transform: uppercase;
-                letter-spacing: 10px;
-            }
-
-            /* HEADER MODERN */
-            .mp-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #1b4d3e;
-                margin-bottom: 25px;
-            }
-            .mp-brand { display: flex; flex-direction: column; }
-            .mp-brand h1 { font-size: 20pt; font-weight: 900; color: #1b4d3e; line-height: 1; letter-spacing: -0.5px; margin: 0; }
-            .mp-brand span { font-size: 8pt; font-weight: 700; color: #b0a072; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
-            
-            .mp-meta-box { text-align: right; }
-            .mp-id { font-family: 'Courier New', monospace; font-size: 11pt; font-weight: 700; color: #64748b; letter-spacing: 0.5px; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
-            .mp-date { font-size: 9pt; font-weight: 600; color: #1b4d3e; margin-top: 6px; }
-
-            /* HERO SECTION (JUDUL & STATUS) */
-            .mp-hero {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 20px;
-                padding: 15px;
-                background: #f8fafc;
-                border-radius: 12px;
-                border-left: 5px solid #1b4d3e;
-            }
-            .mp-title-block { flex: 1; }
-            .mp-category { 
-                display: inline-block; 
-                background: #1b4d3e; 
-                padding: 3px 8px; 
-                border-radius: 4px; 
-                font-size: 7pt; 
-                font-weight: 700; 
-                text-transform: uppercase; 
-                color: white; 
-                margin-bottom: 6px;
-                letter-spacing: 1px;
-            }
-            .mp-main-title { font-size: 16pt; font-weight: 800; color: #0f172a; line-height: 1.3; margin: 0; }
-            
-            .mp-status-badge {
-                background: white; color: #166534; 
-                padding: 6px 12px; border-radius: 8px;
-                font-size: 9pt; font-weight: 800;
-                text-transform: uppercase;
-                border: 1px solid #bbf7d0;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-                align-self: center;
-            }
-
-            /* INFO GRID (KOTAK INFORMASI) */
-            .mp-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-                margin-bottom: 25px;
-                break-inside: avoid; 
-                page-break-inside: avoid;
-            }
-            .mp-card {
-                background: white;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 10px 12px;
-                display: flex; flex-direction: column;
-            }
-            .mp-label { font-size: 7pt; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-            .mp-val { font-size: 10pt; font-weight: 600; color: #334155; line-height: 1.3; }
-            .mp-val-highlight { color: #1b4d3e; font-weight: 700; }
-
-            /* NARRATIVE SECTIONS */
-            .mp-section { 
-                margin-bottom: 20px; 
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            .mp-section-head { 
-                font-size: 9pt; font-weight: 800; color: #1b4d3e; 
-                text-transform: uppercase; border-bottom: 2px solid #e2e8f0; 
-                padding-bottom: 5px; margin-bottom: 8px; 
-                letter-spacing: 0.5px;
-            }
-            .mp-text { font-size: 9.5pt; line-height: 1.5; color: #334155; text-align: justify; }
-
-            /* PERSONIL CHIPS */
-            .mp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-            .mp-chip { 
-                background: white; border: 1px solid #cbd5e1; 
-                padding: 4px 10px; border-radius: 20px; 
-                font-size: 8.5pt; font-weight: 600; color: #475569; 
-            }
-
-            /* PHOTOS MODERN - CARD STYLE */
-            .mp-photos-container {
-                break-inside: avoid;
-                page-break-inside: avoid;
-                margin-top: 10px;
-            }
-            .mp-photos { 
-                display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-            }
-            .mp-photo-box {
-                border-radius: 8px; overflow: hidden;
-                border: 1px solid #e2e8f0;
-                background: white;
-                padding: 6px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            }
-            .mp-photo-box img { 
-                width: 100%; height: 180px; object-fit: cover; border-radius: 4px; 
-                display: block;
-            }
-            .mp-caption {
-                text-align: center; font-size: 7.5pt; color: #64748b; 
-                font-weight: 700; padding: 8px 0 2px; text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            /* FOOTER */
-            .mp-footer {
-                margin-top: 40px;
-                padding-top: 15px;
-                border-top: 2px dashed #cbd5e1;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            .mp-sign-box { text-align: left; }
-            .mp-sign-img { height: 60px; margin: 10px 0; opacity: 0.1; } /* Placeholder ttd */
-            .mp-qr-box { text-align: right; display: flex; align-items: center; gap: 10px; }
-            .mp-qr-code { width: 55px; height: 55px; border-radius: 4px; border: 1px solid #e2e8f0; padding: 3px; background: white; }
-
-            /* ================================================= */
-            /* === MODERN RECAP STYLE (UPDATE LANDSCAPE) ==== */
-            /* ================================================= */
-
-            .mr-container { 
-                font-family: 'Plus Jakarta Sans', sans-serif; 
-                color: #334155; 
-                position: relative; 
-                width: 100%;
-                /* Remove fixed max-width for landscape */
-                max-width: none;
-                padding: 10mm;
-                padding-bottom: 30mm; /* Added padding for signature space */
-            }
-            
-            /* Header Recap Modern */
-            .mr-header { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: flex-end; 
-                border-bottom: 3px solid #1b4d3e; 
-                padding-bottom: 15px; 
-                margin-bottom: 25px; 
-            }
-            .mr-brand h1 { font-size: 20pt; font-weight: 900; color: #1b4d3e; margin: 0; line-height: 1; letter-spacing: -0.5px; }
-            .mr-brand span { font-size: 8pt; font-weight: 700; color: #d4c496; text-transform: uppercase; letter-spacing: 2px; }
-            
-            .mr-title-box { text-align: right; }
-            .mr-title-main { font-size: 14pt; font-weight: 800; color: #0f172a; text-transform: uppercase; margin: 0; }
-            .mr-period { font-size: 9pt; color: #64748b; font-weight: 600; background: #f1f5f9; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-top: 5px; }
-
-            /* Table Modern */
-            .mr-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 20px; }
-            
-            .mr-table thead th { 
-                background-color: #1b4d3e !important; 
-                color: white !important; 
-                font-weight: 700; 
-                text-transform: uppercase; 
-                padding: 10px 8px; 
-                text-align: left; 
-                font-size: 8pt;
-                letter-spacing: 0.5px;
-                border: none;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            
-            .mr-table tbody td { 
-                padding: 8px; 
-                border-bottom: 1px solid #e2e8f0; 
-                vertical-align: top; 
-                color: #334155; 
-                line-height: 1.4;
-            }
-            
-            /* Zebra Striping */
-            .mr-table tbody tr:nth-child(even) { 
-                background-color: #f8fafc !important; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-
-            /* Elements inside table */
-            .mr-no { font-weight: 700; color: #94a3b8; text-align: center; }
-            .mr-date { font-weight: 700; color: #1b4d3e; display: block; white-space: nowrap; }
-            .mr-time { font-size: 7.5pt; color: #64748b; font-weight: 500; }
-            
-            .mr-cat-badge { 
-                display: inline-block; 
-                padding: 3px 8px; 
-                border-radius: 6px; 
-                font-size: 6.5pt; 
-                font-weight: 800; 
-                text-transform: uppercase; 
-                background: #e2e8f0; 
-                color: #475569; 
-                border: 1px solid #cbd5e1;
-                margin-bottom: 4px;
-            }
-            .mr-judul { font-weight: 700; color: #0f172a; font-size: 9pt; }
-
-            /* Footer */
-            .mr-footer { 
-                margin-top: 30px; 
-                display: flex; 
-                justify-content: flex-end; 
-                page-break-inside: avoid;
-                padding-bottom: 10px; /* Safe space */
-            }
-            .mr-sign-box { 
-                width: 220px; 
-                text-align: center; 
-            }
-            .mr-sign-date { font-size: 10pt; color: #64748b; margin-bottom: 5px; }
-            .mr-sign-title { font-size: 10pt; font-weight: 700; color: #1e293b; margin-bottom: 50px; }
-            .mr-sign-name { font-size: 11pt; font-weight: 800; color: #1e293b; border-bottom: 2px solid #cbd5e1; display: inline-block; padding-bottom: 2px; }
-            .mr-sign-nip { font-size: 9pt; color: #94a3b8; margin-top: 4px; }
-
-        }
-    </style>
-
-    <script>
-        // --- 1. INDEXED DB WRAPPER ---
-        // Menggunakan IndexedDB untuk penyimpanan lokal (simulasi database lokal)
-        const IDB_NAME = 'SiKERIS_DB';
-        const IDB_VERSION = 1;
-
-        const dbPromise = new Promise((resolve, reject) => {
-            const request = indexedDB.open(IDB_NAME, IDB_VERSION);
-            request.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains('reports')) db.createObjectStore('reports', { keyPath: 'id' });
-                if (!db.objectStoreNames.contains('members')) db.createObjectStore('members', { keyPath: 'id' });
-                if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'id' });
-            };
-            request.onsuccess = (e) => resolve(e.target.result);
-            request.onerror = (e) => reject(e);
-        });
-
-        const DB = {
-            getAll: async (storeName) => {
-                const db = await dbPromise;
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(storeName, 'readonly');
-                    const store = tx.objectStore(storeName);
-                    const req = store.getAll();
-                    req.onsuccess = () => {
-                        const res = req.result || [];
-                        res.sort((a, b) => (b.id > a.id) ? 1 : -1); 
-                        resolve(res);
-                    };
-                    req.onerror = () => reject(req.error);
-                });
-            },
-            add: async (storeName, item) => {
-                const db = await dbPromise;
-                if(!item.id) item.id = Date.now().toString();
-                item.createdAt = new Date().toISOString();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(storeName, 'readwrite');
-                    const store = tx.objectStore(storeName);
-                    store.add(item);
-                    tx.oncomplete = () => resolve(item);
-                    tx.onerror = () => reject(tx.error);
-                });
-            },
-            update: async (storeName, id, data) => {
-                const db = await dbPromise;
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(storeName, 'readwrite');
-                    const store = tx.objectStore(storeName);
-                    const req = store.get(id);
-                    req.onsuccess = () => {
-                        const item = req.result;
-                        if (item) {
-                            const updated = { ...item, ...data, updatedAt: new Date().toISOString() };
-                            store.put(updated);
-                            resolve(updated);
-                        } else {
-                            resolve(null);
-                        }
-                    };
-                    req.onerror = () => reject(req.error);
-                });
-            },
-            delete: async (storeName, id) => {
-                const db = await dbPromise;
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(storeName, 'readwrite');
-                    const store = tx.objectStore(storeName);
-                    store.delete(id);
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = () => reject(tx.error);
-                });
-            },
-            // Migrasi data lama dari localStorage (jika ada) ke IndexedDB
-            migrateFromLocalStorage: async () => {
-                try {
-                    const lsReports = JSON.parse(localStorage.getItem('reports') || '[]');
-                    const lsMembers = JSON.parse(localStorage.getItem('members') || '[]');
-                    const lsUsers = JSON.parse(localStorage.getItem('users') || '[]');
-
-                    if (lsReports.length > 0) {
-                        for (const r of lsReports) await DB.add('reports', r);
-                        localStorage.removeItem('reports');
-                    }
-                    if (lsMembers.length > 0) {
-                        for (const m of lsMembers) await DB.add('members', m);
-                        localStorage.removeItem('members');
-                    }
-                    if (lsUsers.length > 0) {
-                        for (const u of lsUsers) await DB.add('users', u);
-                        localStorage.removeItem('users');
-                    }
-                } catch (e) { console.log("Migration check done"); }
-            },
-            // Menghapus semua data
-            reset: async () => {
-                if(window.confirm('PERINGATAN: Semua data akan dihapus PERMANEN. Lanjutkan?')) {
-                    const db = await dbPromise;
-                    const stores = ['reports', 'members', 'users'];
-                    const tx = db.transaction(stores, 'readwrite');
-                    stores.forEach(s => tx.objectStore(s).clear());
-                    localStorage.clear();
-                    location.reload();
-                }
-            }
-        };
-
-        // --- 2. UTILS & IMAGE COMPRESSION ---
-        // Kompresi gambar sebelum disimpan sebagai Base64
-        function compressImage(file, maxWidth, quality, callback) {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > maxWidth) {
-                        height *= maxWidth / width;
-                        width = maxWidth;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    callback(canvas.toDataURL('image/jpeg', quality));
-                };
-            };
-        }
-
-        // --- 3. VARIABLES ---
-        let currentMgmtTab = 'members';
-        let selectedCategory = '';
-        let editingId = null;
-        let photoBase64 = null, photo1 = null, photo2 = null;
-        let currentReports = [];
-        const defaultPhoto = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjY2JkNWUxIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNCIvPjxwYXRoIGQ9Ik02IDIxdjYtM2E2IDYgMCAwIDEgMTItM3YzYTYgNiAwIDAgMS02IDN6Ii8+PC9zdmc+";
-
-        // --- 4. AUTH ---
-        async function doLogin() {
-            const u = document.getElementById('l-user').value;
-            const p = document.getElementById('l-pass').value;
-            const users = await DB.getAll('users');
-            // Cek login: admin/admin atau user terdaftar
-            const found = users.find(x => x.user === u && x.pass === p);
-            
-            if((u === 'admin' && p === 'admin') || found) {
-                document.getElementById('login-overlay').classList.add('hidden');
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('currentUser', u);
-            } else {
-                console.error("Login Gagal: Username atau Password Salah!");
-                const loginCard = document.querySelector('.login-card');
-                const errorMsg = document.createElement('p');
-                errorMsg.innerText = "Username atau Password Salah!";
-                errorMsg.style.color = 'var(--danger)';
-                errorMsg.style.marginTop = '10px';
-                errorMsg.style.fontSize = '0.8rem';
-                const existingError = loginCard.querySelector('.error-message');
-                if (existingError) existingError.remove();
-                errorMsg.classList.add('error-message');
-                loginCard.appendChild(errorMsg);
-                setTimeout(() => errorMsg.remove(), 3000);
-            }
-        }
-
-        function doLogout() {
-            if(window.confirm('Keluar dari aplikasi SiKERIS?')) {
-                localStorage.removeItem('isLoggedIn');
-                location.reload();
-            }
-        }
-
-        function checkLogin() {
-            const overlay = document.getElementById('login-overlay');
-            if(!overlay) return;
-
-            const logged = localStorage.getItem('isLoggedIn');
-            if(logged === 'true') {
-                overlay.classList.add('hidden');
-            } else {
-                overlay.classList.remove('hidden');
-            }
-        }
-
-        // --- 5. INIT ---
-        window.onload = async () => {
-            await DB.migrateFromLocalStorage();
-            checkLogin(); 
-
-            const fMem = document.getElementById('form-mem');
-            if(fMem) fMem.addEventListener('submit', saveMember);
-
-            const fUser = document.getElementById('form-user');
-            if(fUser) fUser.addEventListener('submit', saveUser);
-
-            const fRep = document.getElementById('form-report');
-            if(fRep) fRep.addEventListener('submit', saveReport);
-
-            const fLog = document.getElementById('form-login');
-            if(fLog) fLog.addEventListener('submit', (e) => { e.preventDefault(); doLogin(); });
-
-            const sPersonil = document.getElementById('search-personil');
-            if(sPersonil) {
-                sPersonil.addEventListener('input', function(e) {
-                    const term = e.target.value.toLowerCase();
-                    const items = document.querySelectorAll('.personnel-check');
-                    items.forEach(item => {
-                        item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';
-                    });
-                });
-            }
-
-            const members = await DB.getAll('members');
-            if(members.length === 0) {
-                // Data dummy awal
-                await DB.add('members', {nama: "Budi Santoso", nip: "198001012005011001", pangkat:"Gol II/a", jabatan: "Danru", foto: ""});
-                await DB.add('members', {nama: "Rina Wijaya", nip: "199205102020012003", pangkat:"Gol II/b", jabatan: "Anggota", foto: ""});
-            }
-            
-            loadReports();
-            loadMembers();
-            loadUsers();
-        };
-
-        // --- 6. UTILS LANJUTAN ---
-        // Mengubah objek menjadi string JSON yang aman untuk atribut HTML
-        function escapeJson(obj) {
-            return JSON.stringify(obj).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-        }
-        
-        function formatDateIndo(dateStr) {
-            const d = new Date(dateStr);
-            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-            return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-        }
-        function formatTime(dateStr) {
-             const d = new Date(dateStr);
-             return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        }
-
-        // --- 7. CHART LOGIC ---
-        async function renderChart(data) {
-            const counts = {};
-            const cats = ['Patroli','Penegakan Perda','Trantibum','PAM/WAL','Sosialisasi','Deteksi Dini'];
-            const colors = ['#1b4d3e', '#2d7a61', '#d4c496', '#b0a072', '#5f7d75', '#a3b18a'];
-            
-            cats.forEach(c => counts[c] = 0);
-            data.forEach(r => { if(counts[r.kategori] !== undefined) counts[r.kategori]++; });
-
-            const total = data.length;
-            const elTotal = document.getElementById('chart-total');
-            const elStat = document.getElementById('stat-total');
-            if(elTotal) elTotal.innerText = total;
-            if(elStat) elStat.innerText = total;
-
-            const canvas = document.getElementById('activityChart');
-            if(!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width;
-            const h = canvas.height;
-            const radius = w / 2;
-            
-            ctx.clearRect(0, 0, w, h);
-            
-            if(total === 0) {
-                ctx.beginPath();
-                ctx.arc(w/2, h/2, radius, 0, 2 * Math.PI);
-                ctx.fillStyle = '#e2e8f0';
-                ctx.fill();
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(w/2, h/2, radius * 0.65, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
-                document.getElementById('chart-legend').innerHTML = '<p style="text-align:center;font-size:0.7rem;color:#ccc">Data kosong.</p>';
-                return;
-            }
-
-            let startAngle = 0;
-            let legendHtml = '';
-
-            cats.forEach((cat, i) => {
-                const count = counts[cat];
-                if(count > 0) {
-                    const sliceAngle = (count / total) * 2 * Math.PI;
-                    ctx.beginPath();
-                    ctx.moveTo(w/2, h/2);
-                    ctx.arc(w/2, h/2, radius, startAngle, startAngle + sliceAngle);
-                    ctx.fillStyle = colors[i];
-                    ctx.fill();
-                    startAngle += sliceAngle;
-
-                    legendHtml += `
-                    <div class="legend-item">
-                        <div style="display:flex;align-items:center">
-                            <span class="li-dot" style="background:${colors[i]}"></span>
-                            <span class="li-name">${cat}</span>
-                        </div>
-                        <span class="li-val">${count}</span>
-                    </div>`;
-                }
-            });
-
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(w/2, h/2, radius * 0.65, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.globalCompositeOperation = 'source-over';
-
-            document.getElementById('chart-legend').innerHTML = legendHtml;
-        }
-
-        // --- 8. APP LOGIC (NAVIGASI & MODAL) ---
-        function switchTab(tab) {
-            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
-            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
-            
-            // Toggle Stats Widget based on tab
-            const widgets = document.getElementById('home-widgets');
-            if(tab === 'home') {
-                if(widgets) widgets.classList.remove('hidden');
-            } else {
-                if(widgets) widgets.classList.add('hidden');
-            }
-            
-            const view = document.getElementById(`view-${tab}`);
-            if(view) view.classList.remove('hidden');
-            
-            const btn = document.getElementById(`nav-${tab}`);
-            if(btn) btn.classList.add('active'); 
-            
-            if(tab === 'home' || tab === 'archive') loadReports();
-        }
-
-        function switchMgmtTab(tab) {
-            currentMgmtTab = tab;
-            document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            
-            document.getElementById('mgmt-members').classList.add('hidden');
-            document.getElementById('mgmt-users').classList.add('hidden');
-            document.getElementById(`mgmt-${tab}`).classList.remove('hidden');
-        }
-
-        function openModal(id) { document.getElementById(id).classList.add('show'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-
-        function openAddMgmt() {
-            if(currentMgmtTab === 'members') {
-                editingId = null; photoBase64 = null;
-                document.getElementById('form-mem').reset();
-                document.getElementById('m-prev').src = defaultPhoto;
-                document.getElementById('mem-modal-title').innerText = "Tambah Anggota";
-                openModal('modal-member');
-            } else {
-                document.getElementById('form-user').reset();
-                openModal('modal-user');
-            }
-        }
-        
-        function openMenu() { 
-             const settingsView = document.getElementById('view-settings');
-             // Jika di view settings, FAB berfungsi untuk Add (Anggota/User)
-             if (!settingsView.classList.contains('hidden')) {
-                 openAddMgmt();
-             } else {
-                 // Jika di view Home/Archive, FAB berfungsi untuk buka Menu Laporan
-                 openModal('modal-menu'); 
-             }
-        }
-
-        // --- 9. LOGIC MANAJEMEN ANGGOTA ---
-        function handleMemberPhoto(input) {
-            const file = input.files[0]; 
-            if(!file) return;
-            compressImage(file, 300, 0.7, (compressedResult) => {
-                photoBase64 = compressedResult;
-                document.getElementById('m-prev').src = photoBase64;
-            });
-        }
-
-        async function saveMember(e) {
-            e.preventDefault();
-            const d = {
-                nama: document.getElementById('m-nama').value,
-                nip: document.getElementById('m-nip').value,
-                pangkat: document.getElementById('m-pangkat').value,
-                jabatan: document.getElementById('m-jab').value,
-                foto: photoBase64
-            };
-            if(editingId) {
-                // Jika tidak ada foto baru, ambil foto lama
-                if(!photoBase64) {
-                    const mems = await DB.getAll('members');
-                    const old = mems.find(x => x.id === editingId);
-                    if(old) d.foto = old.foto;
-                }
-                await DB.update('members', editingId, d);
-            } else {
-                await DB.add('members', d);
-            }
-            // Mengganti alert dengan console.log/custom modal
-            console.log('Data Anggota Berhasil Disimpan');
-            closeModal('modal-member'); 
-            loadMembers();
-        }
-
-        async function deleteMember(id) { if(window.confirm("Hapus anggota ini?")) { await DB.delete('members', id); loadMembers(); } }
-
-        async function editMember(id) {
-            const mems = await DB.getAll('members');
-            const mem = mems.find(m => m.id === id);
-            if(!mem) return;
-            editingId = id; photoBase64 = null;
-            document.getElementById('mem-modal-title').innerText = "Edit Anggota";
-            document.getElementById('m-nama').value = mem.nama;
-            document.getElementById('m-nip').value = mem.nip || '';
-            document.getElementById('m-pangkat').value = mem.pangkat || '';
-            document.getElementById('m-jab').value = mem.jabatan;
-            document.getElementById('m-prev').src = mem.foto || defaultPhoto;
-            openModal('modal-member');
-        }
-
-        async function viewMemberDetail(id) {
-            const mems = await DB.getAll('members');
-            const mem = mems.find(m => m.id === id);
-            if(!mem) return;
-            document.getElementById('dm-img').src = mem.foto || defaultPhoto;
-            document.getElementById('dm-name').innerText = mem.nama;
-            document.getElementById('dm-nip').innerText = mem.nip || '-';
-            document.getElementById('dm-pangkat').innerText = mem.pangkat || '-';
-            document.getElementById('dm-jab').innerText = mem.jabatan;
-            openModal('modal-member-detail');
-        }
-
-        async function loadMembers() {
-            const d = await DB.getAll('members');
-            const l = document.getElementById('list-members');
-            l.innerHTML = d.length ? d.map(m => `
-                <div class="mgmt-item fade-in">
-                    <img src="${m.foto || ''}" class="mi-photo" onerror="this.src='${defaultPhoto}'">
-                    <div class="mi-info">
-                        <div class="mi-name">${m.nama}</div>
-                        <div class="mi-sub">${m.nip || '-'}</div>
-                        <div class="mi-sub" style="color:var(--accent-dark)">${m.jabatan}</div>
-                    </div>
-                    <div class="mc-actions">
-                         <button onclick="viewMemberDetail('${m.id}')" class="btn-icon btn-blue" aria-label="Detail Anggota">👁️</button>
-                         <button onclick="editMember('${m.id}')" class="btn-icon btn-yellow" aria-label="Edit Anggota">✏️</button>
-                        <button onclick="deleteMember('${m.id}')" class="btn-icon btn-red" aria-label="Hapus Anggota">🗑️</button>
-                    </div>
-                </div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada anggota.</p>';
-        }
-
-        // --- 10. LOGIC MANAJEMEN USER ---
-        async function saveUser(e) {
-            e.preventDefault();
-            const uName = document.getElementById('u-name').value;
-            const uPass = document.getElementById('u-pass').value;
-
-            // Simple validation to prevent adding duplicate 'admin' or empty fields
-            if (uName === 'admin') {
-                console.error("Tidak bisa menambahkan user 'admin' lagi.");
-                return;
-            }
-            if (!uName || !uPass) return;
-            
-            await DB.add('users', { user: uName, pass: uPass });
-            console.log('Akun Petugas Disimpan');
-            closeModal('modal-user'); 
-            loadUsers();
-        }
-        
-        async function loadUsers() {
-            const d = await DB.getAll('users');
-            // Filter out the implicit 'admin' user if we were to show all
-            document.getElementById('list-users').innerHTML = d.length ? d.map(u => `
-                <div class="mgmt-item fade-in">
-                    <div class="mi-info">
-                        <div class="mi-name">User: ${u.user}</div>
-                        <div class="mi-sub">Pass: ${u.pass}</div>
-                    </div>
-                    <button onclick="deleteUser('${u.id}')" class="btn-icon btn-red" aria-label="Hapus User">🗑️</button>
-                </div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada akun tambahan.</p>';
-        }
-        async function deleteUser(id) { if(window.confirm('Hapus user?')) { await DB.delete('users', id); loadUsers(); } }
-
-
-        // --- 11. LOGIC LAPORAN ---
-        async function startReport(cat) {
-            selectedCategory = cat;
-            closeModal('modal-menu'); openModal('modal-report');
-            document.getElementById('form-report').reset();
-            document.getElementById('rep-title').innerText = cat;
-            document.getElementById('search-personil').value = ''; 
-            photo1=null; photo2=null; editingId=null;
-            
-            // Reset foto preview
-            document.getElementById('prev1').src=""; document.getElementById('prev1').style.display='none';
-            document.getElementById('prev2').src=""; document.getElementById('prev2').style.display='none';
-
-            // Set placeholder 
-            const tgt = document.getElementById('i-target');
-            const temuanInput = document.getElementById('i-temuan');
-            
-            // Logika spesifik per kategori
-            if(cat === 'Penegakan Perda') {
-                tgt.placeholder = "Nama Pelanggar / Usaha";
-                temuanInput.placeholder = "Detail Temuan Pelanggaran...";
-            } else if(cat === 'Sosialisasi') {
-                tgt.placeholder = "Target Audiens (Jml Orang)";
-                temuanInput.placeholder = "Catatan / Respon Masyarakat...";
-            } else {
-                tgt.placeholder = "Identitas Sasaran...";
-                temuanInput.placeholder = "Temuan Penting di Lapangan...";
-            }
-
-            // Load personil untuk checklist
-            const mems = await DB.getAll('members');
-            document.getElementById('list-personil').innerHTML = mems.length ? mems.map(m => `
-                <label class="personnel-check">
-                    <input type="checkbox" class="chk-person" value='${escapeJson({nama:m.nama, nip:m.nip, pangkat:m.pangkat, jabatan:m.jabatan})}'>
-                    <span style="font-size:0.9rem">${m.nama} (${m.jabatan})</span>
-                </label>`).join('') : '<p style="font-size:0.8rem;color:#ef4444;">*Input anggota di menu Pengaturan dulu</p>';
-        }
-
-        function handleReportPhoto(input, num) {
-            const f = input.files[0]; if(!f) return;
-            compressImage(f, 500, 0.7, (result) => { 
-                 if(num===1) { 
-                    photo1 = result; 
-                    const img = document.getElementById('prev1'); img.src=photo1; img.style.display='block';
-                } else { 
-                    photo2 = result; 
-                    const img = document.getElementById('prev2'); img.src=photo2; img.style.display='block';
-                }
-            });
-        }
-
-        async function saveReport(e) {
-            e.preventDefault();
-            try {
-                const checks = document.querySelectorAll('.chk-person:checked');
-                const personil = []; checks.forEach(c => personil.push(JSON.parse(c.value)));
-                
-                // Get old photos if editing and no new ones provided
-                let currentPhoto1 = photo1;
-                let currentPhoto2 = photo2;
-
-                if (editingId) {
-                     const oldReport = currentReports.find(r => r.id === editingId) || (await DB.getAll('reports')).find(r => r.id === editingId);
-                     if (oldReport) {
-                        if (!currentPhoto1) currentPhoto1 = oldReport.foto1;
-                        if (!currentPhoto2) currentPhoto2 = oldReport.foto2;
-                     }
-                }
-
-                const d = {
-                    kategori: selectedCategory,
-                    judul: document.getElementById('i-judul').value,
-                    lokasi: document.getElementById('i-lokasi').value,
-                    target: document.getElementById('i-target').value,
-                    uraian: document.getElementById('i-uraian').value,
-                    // Tambahkan field temuan
-                    temuan: document.getElementById('i-temuan').value,
-                    tindakan: document.getElementById('i-tindakan').value,
-                    situasi: document.getElementById('i-situasi').value,
-                    perda: document.getElementById('i-perda').value,
-                    personil: personil,
-                    foto1: currentPhoto1, 
-                    foto2: currentPhoto2
-                };
-
-                if(editingId) { await DB.update('reports', editingId, d); console.log('Update Berhasil'); }
-                else { await DB.add('reports', d); console.log('Laporan Terkirim'); }
-                
-                closeModal('modal-report'); loadReports(); switchTab('archive');
-            } catch (err) { console.error('Gagal simpan:', err); }
-        }
-
-        function filterReports() { loadReports(); }
-        function resetFilter() {
-            document.getElementById('f-start').value = '';
-            document.getElementById('f-end').value = '';
-            document.getElementById('f-cat').value = '';
-            loadReports();
-        }
-
-        async function loadReports() {
-            let d = await DB.getAll('reports');
-            const startStr = document.getElementById('f-start').value;
-            const endStr = document.getElementById('f-end').value;
-            const cat = document.getElementById('f-cat').value;
-            
-            const today = new Date(); today.setHours(0,0,0,0);
-            const todayReports = d.filter(r => {
-                const rDate = new Date(r.createdAt); rDate.setHours(0,0,0,0);
-                return rDate.getTime() === today.getTime();
-            });
-            document.getElementById('stat-today').innerText = todayReports.length;
-
-            if(startStr) {
-                const startDate = new Date(startStr); startDate.setHours(0,0,0,0);
-                d = d.filter(r => new Date(r.createdAt) >= startDate);
-            }
-            if(endStr) {
-                const endDate = new Date(endStr); endDate.setHours(23,59,59,999);
-                d = d.filter(r => new Date(r.createdAt) <= endDate);
-            }
-            if(cat) { d = d.filter(r => r.kategori === cat); }
-
-            currentReports = d;
-            renderChart(await DB.getAll('reports')); // Chart selalu pakai semua data
-
-            const html = (i) => {
-                const date = new Date(i.createdAt);
-                const month = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
-                const str = escapeJson(i);
-                return `
-                <div class="report-card fade-in">
-                    <div class="rc-date">
-                        <div class="rc-time">${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</div>
-                        <div class="rc-day">${date.getDate()} ${month[date.getMonth()]}</div>
-                    </div>
-                    <div class="rc-info">
-                        <span class="rc-badge">${i.kategori}</span>
-                        <div class="rc-title">${i.judul}</div>
-                        <div class="rc-desc">${i.uraian}</div>
-                        <div class="card-actions">
-                            <button onclick='viewDetail(${str})' class="action-btn btn-view" aria-label="Lihat Detail">👁️ Lihat</button>
-                            <button onclick='printReport(${str})' class="action-btn btn-print" aria-label="Cetak Laporan">🖨️ Cetak</button>
-                            <button onclick='editReport(${str})' class="action-btn btn-edit" aria-label="Edit Laporan">✏️ Edit</button>
-                            <button onclick="deleteReport('${i.id}')" class="action-btn btn-del" aria-label="Hapus Laporan">🗑️</button>
-                        </div>
-                    </div>
-                </div>`;
-            };
-
-            document.getElementById('list-archive').innerHTML = d.length ? d.map(html).join('') : '<div style="text-align:center;margin-top:50px;color:#ccc"><p>Tidak ada laporan sesuai filter.</p></div>';
-            
-            // Load Home (3 laporan terbaru dari SEMUA data)
-            const allReports = await DB.getAll('reports');
-            document.getElementById('list-home').innerHTML = allReports.length ? allReports.slice(0,3).map(html).join('') : '<div style="text-align:center;margin-top:20px;color:#ccc"><p>Tidak ada kegiatan baru.</p></div>';
-        }
-
-        async function deleteReport(id) { if(window.confirm('Hapus laporan ini permanen?')) { await DB.delete('reports', id); loadReports(); } }
-
-        async function editReport(i) {
-            // Re-use startReport to set up the modal context
-            await startReport(i.kategori); 
-            
-            document.getElementById('rep-title').innerText = `Edit Laporan: ${i.judul}`;
-            editingId = i.id;
-            
-            // Populate form fields
-            document.getElementById('i-judul').value = i.judul;
-            document.getElementById('i-lokasi').value = i.lokasi;
-            document.getElementById('i-target').value = i.target;
-            document.getElementById('i-uraian').value = i.uraian;
-            // Populate temuan
-            document.getElementById('i-temuan').value = i.temuan || '';
-            document.getElementById('i-tindakan').value = i.tindakan;
-            document.getElementById('i-situasi').value = i.situasi;
-            document.getElementById('i-perda').value = i.perda || '';
-
-            // Restore photos and photo state
-            photo1 = i.foto1; photo2 = i.foto2;
-            const p1=document.getElementById('prev1'); const p2=document.getElementById('prev2');
-            if(i.foto1) { p1.src=i.foto1; p1.style.display='block'; } else { p1.style.display='none'; }
-            if(i.foto2) { p2.src=i.foto2; p2.style.display='block'; } else { p2.style.display='none'; }
-
-            // Check personil
-            const mems = i.personil.map(p => p.nama);
-            document.querySelectorAll('.chk-person').forEach(chk => {
-                const person = JSON.parse(chk.value);
-                chk.checked = mems.includes(person.nama);
-            });
-        }
-
-        function viewDetail(i) {
-            // Update Modal Content with Modern Card Design
-            document.getElementById('mm-kategori').innerText = i.kategori;
-            document.getElementById('mm-judul').innerText = i.judul;
-            
-            document.getElementById('mm-date').innerText = formatDateIndo(i.createdAt);
-            document.getElementById('mm-time').innerText = `${formatTime(i.createdAt)} WIB`;
-            document.getElementById('mm-loc').innerText = i.lokasi;
-            document.getElementById('mm-status').innerText = i.situasi || "Aman";
-
-            document.getElementById('mm-uraian').innerText = i.uraian;
-            // Tambahan view detail untuk Temuan
-            const temuanEl = document.getElementById('mm-temuan-block');
-            if(i.temuan) {
-                temuanEl.style.display = 'block';
-                document.getElementById('mm-temuan').innerText = i.temuan;
-            } else {
-                temuanEl.style.display = 'none';
-            }
-            
-            document.getElementById('mm-tindakan').innerText = i.tindakan || "-";
-
-            const photoContainer = document.getElementById('mm-photos');
-            photoContainer.innerHTML = '';
-            if(i.foto1) photoContainer.innerHTML += `<img src="${i.foto1}" class="mm-photo" alt="Dokumentasi Foto 1">`;
-            if(i.foto2) photoContainer.innerHTML += `<img src="${i.foto2}" class="mm-photo" alt="Dokumentasi Foto 2">`;
-
-            openModal('modal-detail');
-        }
-        
-        // --- 13. NEW FEATURES: EXPORT & SHARE ---
-        
-        // POINT 5: EXPORT TO CSV
-        function exportToCSV() {
-            if(currentReports.length === 0) { alert('Tidak ada data untuk diekspor.'); return; }
-            
-            // Header CSV
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Tanggal,Waktu,Kategori,Judul,Lokasi,Sasaran,Uraian,Temuan,Tindakan,Status\n";
-            
-            // Baris Data
-            currentReports.forEach(r => {
-                const d = new Date(r.createdAt);
-                const tgl = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                const jam = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                
-                // Escape koma agar CSV tidak rusak
-                const clean = (text) => text ? `"${text.replace(/"/g, '""').replace(/\n/g, ' ')}"` : '""';
-                
-                const row = [
-                    tgl, jam, clean(r.kategori), clean(r.judul), clean(r.lokasi), 
-                    clean(r.target), clean(r.uraian), clean(r.temuan), clean(r.tindakan), clean(r.situasi)
-                ].join(",");
-                csvContent += row + "\n";
-            });
-            
-            // Download Trigger
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Laporan_Satpol_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // POINT 7: SHARE VIA WA (HTML2CANVAS)
-        function shareViaWA() {
-            const element = document.querySelector('.modern-modal-card');
-            const spinner = document.getElementById('share-spinner');
-            const btnText = document.getElementById('share-text');
-            
-            spinner.style.display = 'block';
-            btnText.style.display = 'none';
-
-            html2canvas(element, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
-                canvas.toBlob(async blob => {
-                    const file = new File([blob], "laporan_satpol.jpg", { type: "image/jpeg" });
-                    
-                    // Cek jika browser mendukung Native Sharing (Mobile)
-                    if (navigator.share) {
-                        try {
-                            await navigator.share({
-                                title: 'Laporan SiKERIS',
-                                text: 'Laporan Giat Satpol PP',
-                                files: [file]
-                            });
-                        } catch (err) {
-                            console.error("Share failed:", err);
-                        }
-                    } else {
-                        // Fallback: Download Image jika di Desktop
-                        const link = document.createElement('a');
-                        link.href = canvas.toDataURL('image/jpeg');
-                        link.download = 'Laporan-Giat.jpg';
-                        link.click();
-                        alert('Gambar laporan telah diunduh. Silakan kirim manual via WA Web.');
-                    }
-                    
-                    spinner.style.display = 'none';
-                    btnText.style.display = 'block';
-                }, 'image/jpeg', 0.9);
-            });
-        }
-
-        // --- 12. PRINT LOGIC (REFINED MODERN CARD) ---
-        async function printReport(r) {
-            // **FINAL FIX: Set class body untuk mode single agar CSS memuat template yang benar**
-            document.body.classList.add('printing-single');
-            document.body.classList.remove('printing-recap');
-            
-            // INJECT STYLE FOR PORTRAIT
-            const style = document.createElement('style');
-            style.innerHTML = '@page { size: portrait; }';
-            document.head.appendChild(style);
-            
-            const date = new Date(r.createdAt);
-            const dateStr = formatDateIndo(r.createdAt);
-            const timeStr = `${formatTime(r.createdAt)} WIB`;
-
-            // MAPPING DATA KE ELEMENT MODERN (MP-)
-            document.getElementById('mp-cat').innerText = r.kategori || "UMUM";
-            document.getElementById('mp-title').innerText = r.judul;
-            
-            const reportId = r.id.slice(-3);
-            document.getElementById('mp-id').innerText = `#RPT-${reportId}`;
-            document.getElementById('mp-date-top').innerText = dateStr;
-
-            // GRID INFO
-            document.getElementById('mp-time').innerText = timeStr;
-            document.getElementById('mp-loc').innerText = r.lokasi;
-            document.getElementById('mp-target').innerText = r.target || '-';
-            
-            // LOGIC BADGE STATUS
-            const statusEl = document.getElementById('mp-status');
-            statusEl.innerText = r.situasi || 'Aman';
-            if(r.situasi && r.situasi.toLowerCase().includes('aman')) {
-                statusEl.style.background = '#dcfce7'; statusEl.style.color = '#166534'; statusEl.style.borderColor='#bbf7d0';
-            } else {
-                statusEl.style.background = '#fee2e2'; statusEl.style.color = '#b91c1c'; statusEl.style.borderColor='#fecaca';
-            }
-
-            // EXTRA INFO - PERDA
-            const perdaEl = document.getElementById('mp-perda-box');
-            if(r.perda && r.perda.trim() !== "") {
-                perdaEl.style.display = 'flex';
-                document.getElementById('mp-perda').innerText = r.perda;
-            } else {
-                perdaEl.style.display = 'none';
-            }
-            
-            // NARRATIVE
-            document.getElementById('mp-uraian').innerHTML = r.uraian ? r.uraian.replace(/\n/g, '<br>') : "Tidak ada uraian detail.";
-            
-            // TEMUAN SECTION
-            const temuanSection = document.getElementById('mp-section-temuan');
-            if(r.temuan && r.temuan.trim() !== "") {
-                temuanSection.style.display = 'block';
-                document.getElementById('mp-temuan').innerHTML = r.temuan.replace(/\n/g, '<br>');
-            } else {
-                temuanSection.style.display = 'none';
-            }
-
-            document.getElementById('mp-tindakan').innerHTML = r.tindakan ? r.tindakan.replace(/\n/g, '<br>') : "-";
-
-            // PHOTOS MODERN
-            let photoHtml = '';
-            if(r.foto1) photoHtml += `<div class="mp-photo-box"><img src="${r.foto1}"><div class="mp-caption">Dokumentasi 1</div></div>`;
-            if(r.foto2) photoHtml += `<div class="mp-photo-box"><img src="${r.foto2}"><div class="mp-caption">Dokumentasi 2</div></div>`;
-            document.getElementById('mp-photos').innerHTML = photoHtml || '<div style="grid-column:span 2; text-align:center; padding:30px; background:#f8fafc; border-radius:12px; color:#94a3b8; font-style:italic;">Tidak ada dokumentasi terlampir</div>';
-
-            // PERSONIL CHIPS
-            let pHtml = '';
-            if(r.personil && r.personil.length) {
-                r.personil.forEach(p => {
-                    pHtml += `<div class="mp-chip">${p.nama} <span style="font-size:0.8em; opacity:0.7">(${p.jabatan})</span></div>`;
-                });
-            } else { pHtml = '<span style="color:#94a3b8; font-style:italic; font-size:9pt;">Tidak ada data personil</span>'; }
-            document.getElementById('mp-personnel').innerHTML = pHtml;
-
-            // QR Code & Footer
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=SIKERIS-ID-${r.id}`;
-            document.getElementById('mp-qr').src = qrUrl;
-            document.getElementById('mp-sign-date').innerText = `Tarempa, ${dateStr}`;
-            document.getElementById('mp-pic-name').innerText = "(.....................................)";
-
-            // Panggil print dengan delay agar DOM render sempurna
-            setTimeout(() => { 
-                window.focus(); // Penting agar dialog print tidak di-block
-                window.print(); 
-                document.head.removeChild(style); // Cleanup style
-            }, 800);
-        }
-        
-        function printRecap() {
-            if(currentReports.length === 0) { 
-                console.warn("Tidak ada data untuk dicetak."); 
-                return;
-            }
-            // Set class body untuk mode rekap
-            document.body.classList.add('printing-recap');
-            document.body.classList.remove('printing-single');
-            
-            // INJECT STYLE FOR LANDSCAPE
-            const style = document.createElement('style');
-            style.innerHTML = '@page { size: landscape; }';
-            document.head.appendChild(style);
-            
-            // Hitung Periode
-            const s = document.getElementById('f-start').value;
-            const e = document.getElementById('f-end').value;
-            let period = "SEMUA WAKTU";
-            
-            if(s && e) {
-                const ds = new Date(s); const de = new Date(e);
-                const format = d => `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-                period = `${format(ds)} - ${format(de)}`;
-            } else if (s) {
-                const ds = new Date(s);
-                period = `Dari ${ds.getDate()}/${ds.getMonth()+1}/${ds.getFullYear()}`;
-            }
-            document.getElementById('mr-period-text').innerText = period;
-            
-            // Generate Rows
-            let rows = '';
-            currentReports.forEach((item, index) => {
-                const date = new Date(item.createdAt);
-                const dateStr = `${date.getDate()} ${["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"][date.getMonth()]} ${date.getFullYear()}`;
-                const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-                
-                rows += `
-                <tr>
-                    <td class="mr-no">${index + 1}</td>
-                    <td>
-                        <span class="mr-date">${dateStr}</span>
-                        <span class="mr-time">${timeStr} WIB</span>
-                    </td>
-                    <td>
-                        <span class="mr-cat-badge">${item.kategori}</span>
-                    </td>
-                    <td>
-                        <div class="mr-judul">${item.judul}</div>
-                    </td>
-                    <td>${item.uraian}</td>
-                    <td>${item.temuan || '<span style="color:#ccc">-</span>'}</td>
-                    <td>${item.tindakan || '<span style="color:#ccc">-</span>'}</td>
-                </tr>`;
-            });
-            document.getElementById('mr-table-body').innerHTML = rows;
-
-            // Update Tanggal TTD
-            const today = new Date();
-            const todayStr = `${today.getDate()} ${["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][today.getMonth()]} ${today.getFullYear()}`;
-            document.getElementById('mr-sign-date-text').innerText = `Tarempa, ${todayStr}`;
-            
-            // Delay untuk render DOM
-            setTimeout(() => { 
-                window.focus(); 
-                window.print(); 
-                document.head.removeChild(style); // Cleanup style
-            }, 800);
-        }
-        
-        window.onafterprint = () => {
-            // Reset class setelah selesai mencetak
-            document.body.classList.remove('printing-single');
-            document.body.classList.remove('printing-recap');
-        };
-    </script>
-</head>
-<body>
-
-    <!-- LOGIN OVERLAY -->
-    <div id="login-overlay">
-        <div class="login-card">
-            <div class="lc-logo">👮</div>
-            <h2 class="lc-title">SiKERIS</h2>
-            <p class="lc-sub">Sistem Kinerja Elektronik &<br>Riwayat Informasi Satpol</p>
-            <form id="form-login">
-                <div class="form-group" style="text-align:left;">
-                    <label class="form-label">Username</label>
-                    <input type="text" id="l-user" class="form-input" placeholder="Username" required>
-                </div>
-                <div class="form-group" style="text-align:left;">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="l-pass" class="form-input" placeholder="Password" required>
-                </div>
-                <button class="btn-submit" type="submit">MASUK APLIKASI</button>
-                <p style="margin-top:15px; font-size:0.8rem; color:var(--text-sub);">*Default: user:admin | pass:admin</p>
-            </form>
-        </div>
-    </div>
-
-    <!-- HEADER -->
-    <div class="app-header">
-        <div class="header-row">
-            <div class="brand-text">
-                <span>SATPOL PP ANAMBAS</span>
-                <h1 style="font-size:1.6rem;">SiKERIS</h1>
-                <div style="font-size:0.6rem; color:rgba(255,255,255,0.8); font-weight:500; line-height:1.2; margin-top:4px;">
-                    Sistem Kinerja Elektronik &<br>Riwayat Informasi Satpol
-                </div>
-            </div>
-            <div style="display:flex; gap:10px;">
-                 <!-- Logout Button -->
-                 <div class="btn-header-icon" onclick="doLogout()" aria-label="Logout">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                </div>
-                <!-- Settings Button -->
-                <div class="btn-header-icon" onclick="switchTab('settings')" aria-label="Pengaturan">
-                    <svg class="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- HOME WIDGETS (STATS & CHART) - TOGGLED -->
-    <div id="home-widgets">
-        <!-- STATS -->
-        <div class="stats-wrapper">
-            <div class="stat-card"><div class="stat-head">Laporan Masuk</div><div class="stat-val" id="stat-total">0</div></div>
-            <div class="stat-card stat-today">
-                <div class="stat-head">Giat Hari Ini</div>
-                <div class="stat-val" id="stat-today">0</div>
-                <div class="stat-badge">UPDATE REALTIME</div>
-            </div>
-        </div>
-
-        <!-- CHART SECTION -->
-        <div class="chart-container">
-            <div class="section-title" style="align-self:flex-start; margin-bottom:10px;">Statistik Kegiatan</div>
-            <div class="chart-wrapper">
-                <canvas id="activityChart" width="160" height="160"></canvas>
-                <div class="chart-center">
-                    <div class="cc-val" id="chart-total">0</div>
-                    <div class="cc-label">Total</div>
-                </div>
-            </div>
-            <div class="chart-legend" id="chart-legend"></div>
-        </div>
-    </div>
-
-    <!-- 1. VIEW: HOME -->
-    <div id="view-home" class="view-section main-container">
-        <div class="section-title">Riwayat Terbaru</div>
-        <div id="list-home"></div>
-    </div>
-
-    <!-- 2. VIEW: ARCHIVE -->
-    <div id="view-archive" class="view-section main-container hidden" style="padding-top:2rem;">
-        <div class="section-title">Arsip & Rekapitulasi</div>
-        
-        <!-- FILTER BAR -->
-        <div class="filter-bar">
-            <div class="filter-row">
-                <input type="date" id="f-start" class="filter-input" placeholder="Dari">
-                <input type="date" id="f-end" class="filter-input" placeholder="Sampai">
-            </div>
-            <select id="f-cat" class="filter-input">
-                <option value="">Semua Kategori</option>
-                <option value="Patroli">Patroli</option>
-                <option value="Penegakan Perda">Penegakan Perda</option>
-                <option value="Trantibum">Trantibum</option>
-                <option value="PAM/WAL">PAM/WAL</option>
-                <option value="Sosialisasi">Sosialisasi</option>
-                <option value="Deteksi Dini">Deteksi Dini</option>
-            </select>
-            <div class="filter-row">
-                <button onclick="filterReports()" class="btn-filter" style="flex:1" aria-label="Filter Data">🔍 Filter Data</button>
-                <button onclick="resetFilter()" class="btn-filter" style="background:var(--line); color:var(--text-sub)" aria-label="Reset Filter">↻</button>
-            </div>
-            <div class="filter-row">
-                <button onclick="printRecap()" class="btn-recap" style="flex:1">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Cetak Tabel PDF
-                </button>
-                <!-- NEW EXPORT BUTTON -->
-                <button onclick="exportToCSV()" class="btn-export" style="flex:1">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Ekspor Excel
-                </button>
-            </div>
-        </div>
-
-        <div id="list-archive"></div>
-    </div>
-
-    <!-- 3. VIEW: SETTINGS -->
-    <div id="view-settings" class="view-section main-container hidden" style="padding-top:2rem;">
-        <div class="tabs">
-            <div id="tab-members" class="tab active" onclick="switchMgmtTab('members')">Anggota</div>
-            <div id="tab-users" class="tab" onclick="switchMgmtTab('users')">Akun Akses</div>
-        </div>
-        
-        <div id="mgmt-members">
-            <div id="list-members"></div>
-        </div>
-        <div id="mgmt-users" class="hidden">
-            <div id="list-users"></div>
-        </div>
-        
-        <!-- NEW CLEAR BUTTON -->
-        <div style="margin-top:30px; padding:20px; text-align:center; border-top:1px dashed var(--line);">
-             <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:10px;">Ingin menghapus semua data dari Database?</p>
-             <button onclick="DB.reset()" class="btn-del" style="width:100%; padding:15px;" aria-label="Kosongkan Database Permanen">🗑️ KOSONGKAN DATABASE</button>
-        </div>
-    </div>
-
-    <!-- BOTTOM NAV -->
-    <div class="bottom-nav">
-        <button class="nav-btn active" id="nav-home" onclick="switchTab('home')" aria-label="Beranda"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>Beranda</button>
-        <div class="fab-center" onclick="openMenu()" aria-label="Tambah Laporan atau Anggota/User"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg></div>
-        <button class="nav-btn" id="nav-archive" onclick="switchTab('archive')" aria-label="Arsip"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Arsip</button>
-    </div>
-
-    <!-- MODAL MENU -->
-    <div id="modal-menu" class="modal">
-        <div class="modal-content" style="height:auto; max-height:70vh;">
-            <div class="m-head"><h3 class="m-title">Pilih Jenis Kegiatan</h3><button class="m-close" onclick="closeModal('modal-menu')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-            <div class="m-body menu-grid">
-                <div class="menu-item" onclick="startReport('Patroli')"><div class="mi-icon">🚔</div><span class="mi-text">Patroli</span></div>
-                <div class="menu-item" onclick="startReport('Penegakan Perda')"><div class="mi-icon">⚖️</div><span class="mi-text">Gakda</span></div>
-                <div class="menu-item" onclick="startReport('Trantibum')"><div class="mi-icon">🛡️</div><span class="mi-text">Trantibum</span></div>
-                <div class="menu-item" onclick="startReport('PAM/WAL')"><div class="mi-icon">👮</div><span class="mi-text">PAM/WAL</span></div>
-                <div class="menu-item" onclick="startReport('Sosialisasi')"><div class="mi-icon">📢</div><span class="mi-text">Sosialisasi</span></div>
-                <div class="menu-item" onclick="startReport('Deteksi Dini')"><div class="mi-icon">👁️</div><span class="mi-text">Deteksi</span></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL FORM REPORT -->
-    <div id="modal-report" class="modal">
-        <div class="modal-content">
-            <div class="m-head"><h3 class="m-title" id="rep-title">Lapor</h3><button class="m-close" onclick="closeModal('modal-report')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-            <div class="m-body">
-                <form id="form-report">
-                    <div class="form-group"><label class="form-label">Judul Kegiatan</label><input type="text" id="i-judul" class="form-input" required placeholder="Contoh: Patroli Wilayah Pasar"></div>
-                    <div class="form-group"><label class="form-label">Lokasi</label><input type="text" id="i-lokasi" class="form-input" required placeholder="Cth: Pasar Tarempa"></div>
-                    <div class="form-group"><label class="form-label">Target / Sasaran</label><input type="text" id="i-target" class="form-input"></div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Perda Terkait (Opsional)</label>
-                        <input type="text" id="i-perda" class="form-input" placeholder="Nomor Perda (Mis: Perda No 4 Th 2020)...">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Personil (Pilih)</label>
-                        <input type="text" id="search-personil" class="form-input" placeholder="Cari Nama Anggota..." style="margin-bottom:10px; border-color:var(--accent);">
-                        <div id="list-personil" class="personnel-list"></div>
-                    </div>
-                    
-                    <div class="form-group"><label class="form-label">Uraian Kejadian</label><textarea id="i-uraian" class="form-input" rows="4" required placeholder="Jelaskan detail kegiatan..."></textarea></div>
-                    
-                    <!-- Box Temuan -->
-                    <div id="box-temuan" class="form-group">
-                        <label class="form-label">Temuan (Jika Ada)</label>
-                        <textarea id="i-temuan" class="form-input" rows="3" placeholder="Temuan penting di lapangan..."></textarea>
-                    </div>
-
-                    <div class="form-group"><label class="form-label">Tindakan Diambil</label><input type="text" id="i-tindakan" class="form-input" placeholder="Tindakan yang diambil..."></div>
-                    <div class="form-group"><label class="form-label">Situasi Akhir</label><input type="text" id="i-situasi" class="form-input" value="Aman Terkendali"></div>
-                    
-                    <div class="form-group" style="margin-top:1.5rem; border-top:1px solid var(--line); padding-top:1.5rem;">
-                        <label class="form-label">Dokumentasi (2 Foto)</label>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                            <label style="height:100px; background:var(--bg); display:flex; justify-content:center; align-items:center; border-radius:12px; overflow:hidden; cursor:pointer; position:relative; border:1px dashed var(--accent);">
-                                <img id="prev1" style="width:100%; height:100%; object-fit:cover; display:none;" alt="Preview Foto 1">
-                                <span style="font-size:0.7rem; font-weight:bold; color:var(--text-sub); position:absolute;">FOTO 1</span>
-                                <input type="file" hidden accept="image/*" onchange="handleReportPhoto(this,1)">
-                            </label>
-                            <label style="height:100px; background:var(--bg); display:flex; justify-content:center; align-items:center; border-radius:12px; overflow:hidden; cursor:pointer; position:relative; border:1px dashed var(--accent);">
-                                <img id="prev2" style="width:100%; height:100%; object-fit:cover; display:none;" alt="Preview Foto 2">
-                                <span style="font-size:0.7rem; font-weight:bold; color:var(--text-sub); position:absolute;">FOTO 2</span>
-                                <input type="file" hidden accept="image/*" onchange="handleReportPhoto(this,2)">
-                            </label>
-                        </div>
-                    </div>
-
-                    <button class="btn-submit" type="submit">SIMPAN LAPORAN</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL MEMBER (EDIT & ADD) -->
-    <div id="modal-member" class="modal">
-        <div class="modal-content" style="height:auto;">
-            <div class="m-head"><h3 class="m-title" id="mem-modal-title">Anggota</h3><button class="m-close" onclick="closeModal('modal-member')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-            <div class="m-body">
-                <form id="form-mem">
-                    <label class="photo-circle-large" aria-label="Unggah Foto Anggota">
-                        <img id="m-prev" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjY2JkNWUxIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNCIvPjxwYXRoIGQ9Ik02IDIxdjYtM2E2IDYgMCAwIDEgMTItM3YzYTYgNiAwIDAgMS02IDN6Ii8+PC9zdmc+">
-                        <div class="photo-overlay"><span>UPLOAD</span></div>
-                        <input type="file" hidden accept="image/*" onchange="handleMemberPhoto(this)">
-                    </label>
-                    <div class="form-group"><label class="form-label">Nama Lengkap</label><input type="text" id="m-nama" class="form-input" required></div>
-                    <div class="form-group"><label class="form-label">NIP</label><input type="text" id="m-nip" class="form-input"></div>
-                    <div class="form-group"><label class="form-label">Pangkat / Golongan</label><input type="text" id="m-pangkat" class="form-input"></div>
-                    <div class="form-group"><label class="form-label">Jabatan</label><input type="text" id="m-jab" class="form-input"></div>
-                    <button class="btn-submit" type="submit">SIMPAN DATA</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- MODAL MEMBER DETAIL -->
-    <div id="modal-member-detail" class="modal">
-        <div class="modal-content" style="height:auto;">
-            <div class="m-head"><h3 class="m-title">Detail Anggota</h3><button class="m-close" onclick="closeModal('modal-member-detail')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-            <div class="m-body">
-                 <div style="text-align:center; margin-bottom:1.5rem;">
-                     <img id="dm-img" src="" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:4px solid white; box-shadow:0 10px 25px rgba(0,0,0,0.1);" alt="Foto Anggota">
-                 </div>
-                 <div class="detail-row"><div class="dr-label">Nama Lengkap</div><div class="dr-val" id="dm-name"></div></div>
-                 <div class="detail-row"><div class="dr-label">NIP</div><div class="dr-val" id="dm-nip"></div></div>
-                 <div class="detail-row"><div class="dr-label">Pangkat / Golongan</div><div class="dr-val" id="dm-pangkat"></div></div>
-                 <div class="detail-row" style="border:none"><div class="dr-label">Jabatan</div><div class="dr-val" id="dm-jab"></div></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL USER -->
-    <div id="modal-user" class="modal">
-        <div class="modal-content" style="height:auto;">
-            <div class="m-head"><h3 class="m-title">Tambah Akun Petugas</h3><button class="m-close" onclick="closeModal('modal-user')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-            <div class="m-body">
-                <form id="form-user">
-                    <div class="form-group"><label class="form-label">Username</label><input type="text" id="u-name" class="form-input" required></div>
-                    <div class="form-group"><label class="form-label">Password</label><input type="text" id="u-pass" class="form-input" required placeholder="Buat Password..."></div>
-                    <button class="btn-submit" type="submit">SIMPAN AKUN</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- DETAIL REPORT (UPDATED TO MATCH MODERN CARD) -->
-    <div id="modal-detail" class="modal">
-        <div class="modal-content" style="height:auto; max-height:85vh;">
-            <div class="m-head">
-                <h3 class="m-title">Detail Laporan</h3>
-                <div style="display:flex; gap:10px;">
-                    <!-- SHARE BUTTON -->
-                    <button onclick="shareViaWA()" class="m-close" style="width:auto; padding:0 10px; border-radius:20px; font-size:0.7rem; background:#dcfce7; color:#166534; border:none; display:flex; align-items:center; gap:5px;">
-                        <span id="share-spinner" class="spinner" style="width:14px; height:14px; border-color:#166534; border-top-color:transparent;"></span>
-                        <span id="share-text">Bagikan (WA)</span>
-                    </button>
-                    <button class="m-close" onclick="closeModal('modal-detail')" aria-label="Tutup"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                </div>
-            </div>
-            <div class="m-body" style="padding-bottom:100px;"> <!-- Added extra padding for scroll -->
-                
-                <!-- Digital Card Preview in Modal -->
-                <div class="modern-modal-card">
-                    <div class="mm-header">
-                        <h4 id="mm-kategori">KATEGORI</h4>
-                        <h2 id="mm-judul">Judul Kegiatan</h2>
-                    </div>
-                    <div class="mm-body">
-                        <div class="mm-grid">
-                            <div class="mm-box">
-                                <label>Waktu Laporan</label>
-                                <span id="mm-date"></span><br>
-                                <span id="mm-time" style="font-size:0.8rem; color:var(--text-sub)"></span>
-                            </div>
-                            <div class="mm-box">
-                                <label>Lokasi</label>
-                                <span id="mm-loc"></span>
-                            </div>
-                        </div>
-                        
-                        <div class="mm-box" style="margin-bottom:1rem; background: #f0fdf4; border-color: #bbf7d0;">
-                            <label style="color:#166534">Status Situasi</label>
-                            <span id="mm-status" style="color:#15803d"></span>
-                        </div>
-
-                        <div style="margin-bottom:1rem;">
-                            <label class="dr-label">Uraian Kejadian</label>
-                            <p id="mm-uraian" style="font-size:0.9rem; line-height:1.5; color:var(--text); margin-top:4px;"></p>
-                        </div>
-
-                        <div id="mm-temuan-block" style="margin-bottom:1rem; display:none;">
-                            <label class="dr-label">Temuan</label>
-                            <p id="mm-temuan" style="font-size:0.9rem; line-height:1.5; color:var(--text); margin-top:4px;"></p>
-                        </div>
-
-                        <div style="margin-bottom:1rem;">
-                            <label class="dr-label">Tindakan Diambil</label>
-                            <p id="mm-tindakan" style="font-size:0.9rem; line-height:1.5; color:var(--text); margin-top:4px;"></p>
-                        </div>
-
-                        <label class="dr-label">Dokumentasi</label>
-                        <div id="mm-photos" class="mm-photo-grid"></div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- PRINT TEMPLATE (REPORT DETAIL) -->
-    <div id="print-area-modern"> <!-- Display:none removed here, controlled by media query -->
-        <div class="mp-container">
-            <!-- Watermark -->
-            <div class="mp-watermark">SATPOL PP</div>
-
-            <!-- Header Modern -->
-            <div class="mp-header">
-                <div class="mp-brand">
-                    <span>Satpol PP Anambas</span>
-                    <h1>SIKERIS</h1>
-                </div>
-                <div class="mp-meta-box">
-                    <div class="mp-id" id="mp-id">#RPT-001</div>
-                    <div class="mp-date" id="mp-date-top">Senin, 12 Okt 2024</div>
-                </div>
-            </div>
-
-            <!-- Hero Section -->
-            <div class="mp-hero">
-                <div class="mp-title-block">
-                    <span class="mp-category" id="mp-cat">PATROLI</span>
-                    <h2 class="mp-main-title" id="mp-title">Judul Kegiatan Disini</h2>
-                </div>
-                <div class="mp-status-badge" id="mp-status">AMAN</div>
-            </div>
-
-            <!-- Info Grid -->
-            <div class="mp-grid">
-                <div class="mp-card">
-                    <span class="mp-label">Waktu & Lokasi</span>
-                    <div class="mp-val mp-val-highlight" id="mp-time">08:00 WIB</div>
-                    <div class="mp-val" id="mp-loc">Pasar Tarempa</div>
-                </div>
-                <div class="mp-card">
-                    <span class="mp-label">Sasaran / Target</span>
-                    <div class="mp-val" id="mp-target">-</div>
-                </div>
-                <div class="mp-card" id="mp-perda-box" style="display:none">
-                    <span class="mp-label">Perda Terkait</span>
-                    <div class="mp-val" id="mp-perda">-</div>
-                </div>
-            </div>
-
-            <!-- Narrative -->
-            <div class="mp-section">
-                <div class="mp-section-head">Uraian Kejadian</div>
-                <div class="mp-text" id="mp-uraian"></div>
-            </div>
-            
-            <!-- TEMUAN SECTION -->
-            <div class="mp-section" id="mp-section-temuan">
-                <div class="mp-section-head">Temuan</div>
-                <div class="mp-text" id="mp-temuan"></div>
-            </div>
-
-            <div class="mp-section">
-                <div class="mp-section-head">Tindakan Diambil</div>
-                <div class="mp-text" id="mp-tindakan"></div>
-            </div>
-
-            <!-- Personnel -->
-            <div class="mp-section">
-                <div class="mp-section-head">Personil Bertugas</div>
-                <div class="mp-chips" id="mp-personnel"></div>
-            </div>
-
-            <!-- Photos Container with Page Break Avoid -->
-            <div class="mp-photos-container">
-                <div class="mp-section-head">Dokumentasi</div>
-                <div class="mp-photos" id="mp-photos"></div>
-            </div>
-
-            <!-- Footer -->
-            <div class="mp-footer">
-                <div class="mp-sign-box">
-                    <div style="font-size:10pt; font-weight:600; color:#64748b; margin-bottom:40px;" id="mp-sign-date">Tarempa, ...</div>
-                    <div style="font-size:11pt; font-weight:700; color:#1e293b; border-bottom:1px solid #cbd5e1; display:inline-block; padding-bottom:2px;" id="mp-pic-name">Nama Petugas</div>
-                    <div style="font-size:9pt; color:#94a3b8; margin-top:4px;">Pelaksana Kegiatan</div>
-                </div>
-                <div class="mp-qr-box">
-                    <div style="text-align:right;">
-                        <div style="font-size:8pt; font-weight:700; color:#1b4d3e;">VERIFIKASI DIGITAL</div>
-                        <div style="font-size:7pt; color:#94a3b8;">Dokumen ini sah & terekam sistem</div>
-                    </div>
-                    <img id="mp-qr" class="mp-qr-code" src="" alt="QR">
-                </div>
-            </div>
-
-        </div>
-    </div>
-    
-    <!-- PRINT TEMPLATE (RECAPITULATION TABLE) - MODERN -->
-    <div id="print-recap-area"> <!-- Display:none removed here, controlled by media query -->
-        <div class="mr-container">
-            
-            <!-- Modern Header -->
-            <div class="mr-header">
-                <div class="mr-brand">
-                    <span>Satpol PP Anambas</span>
-                    <h1>SIKERIS</h1>
-                </div>
-                <div class="mr-title-box">
-                    <h2 class="mr-title-main">Rekapitulasi Laporan</h2>
-                    <div class="mr-period">PERIODE: <span id="mr-period-text"></span></div>
-                </div>
-            </div>
-            
-            <!-- Modern Table -->
-            <table class="mr-table">
-                <thead>
-                    <tr>
-                        <th width="40" style="text-align:center;">No</th>
-                        <th width="100">Waktu</th>
-                        <th width="100">Kategori</th>
-                        <th width="180">Judul Kegiatan</th>
-                        <th>Uraian Kejadian</th>
-                        <th>Temuan</th>
-                        <th>Tindak Lanjut</th>
-                    </tr>
-                </thead>
-                <tbody id="mr-table-body">
-                    <!-- JS Injected Rows -->
-                </tbody>
-            </table>
-            
-            <!-- Footer Signature -->
-            <div class="mr-footer">
-                <div class="mr-sign-box">
-                    <div class="mr-sign-date" id="mr-sign-date-text">Tarempa, ...</div>
-                    <div class="mr-sign-title">Mengetahui,</div>
-                    <br><br><br>
-                    <div class="mr-sign-name">( ........................................ )</div>
-                    <div class="mr-sign-nip">NIP. ..............................</div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-</body>
-</html>
+<!DOCTYPE html><html lang="id"><head>    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">    <title>SiKERIS - Satpol PP Anambas</title>    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>        <style>        /* --- 1. CORE VARIABLES --- */        :root {            --primary: #1b4d3e;             --primary-soft: #2d7a61;            --accent: #d4c496;             --accent-dark: #b0a072;            --accent-grad: linear-gradient(135deg, #d4c496, #b0a072);            --bg: #f4f4f0;             --surface: #ffffff;            --text: #1b4d3e;            --text-sub: #5f7d75;            --line: #e0e0d8;             --success: #2d7a61;             --danger: #ef4444;         }                * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }        .hidden { display: none !important; }        .fade-in { animation: fadeIn 0.3s ease-out; }        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }        /* --- LOGIN & HEADER --- */        #login-overlay { position: fixed; inset: 0; background: var(--primary); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; transition: 0.3s; }        .login-card { background: var(--bg); width: 100%; max-width: 350px; padding: 2rem; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 2px solid var(--accent); }        .lc-logo { font-size: 3rem; margin-bottom: 1rem; }        .lc-title { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }        .lc-sub { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 2rem; font-weight: 600; }        .app-header { background: var(--primary); padding: 2rem 1.5rem 3.5rem; border-bottom-left-radius: 2rem; border-bottom-right-radius: 2rem; position: relative; z-index: 10; flex-shrink: 0; box-shadow: 0 10px 25px -10px rgba(27, 77, 62, 0.3); }        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }        .brand-text { flex: 1; }        .brand-text h1 { color: white; font-size: 1.8rem; font-weight: 800; line-height: 1; letter-spacing: -0.5px; margin-bottom: 4px; }        .brand-text span { color: var(--accent); font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }                .btn-header-icon { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); z-index: 20; position: relative; transition: 0.2s; width: 38px; height: 38px; color: var(--accent); }        .btn-header-icon:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }        .btn-header-icon svg { width: 20px; height: 20px; stroke-width: 2; }        /* --- WIDGETS & CHART --- */        #home-widgets { display: block; }        .stats-wrapper { padding: 0 1.5rem; margin-top: -2.5rem; position: relative; z-index: 15; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-shrink: 0; }        .stat-card { background: var(--surface); padding: 1rem; border-radius: 1rem; box-shadow: 0 10px 20px -5px rgba(27, 77, 62, 0.08); border: 1px solid white; display: flex; flex-direction: column; height: 90px; justify-content: space-between; }        .stat-head { font-size: 0.65rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }        .stat-val { font-size: 1.6rem; font-weight: 800; color: var(--primary); }        .stat-badge { align-self: flex-start; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: var(--success); font-weight: 700; }        .stat-today .stat-val { color: var(--accent-dark); }        .stat-today .stat-badge { background: var(--bg); color: var(--primary); border: 1px solid var(--accent); }        .chart-container { margin: 1rem 1.5rem; background: var(--surface); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--line); box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-direction: column; align-items: center; position: relative; }        .chart-wrapper { position: relative; width: 160px; height: 160px; margin-bottom: 1rem; }        canvas { width: 100%; height: 100%; transform: rotate(-90deg); }        .chart-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }        .cc-val { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }        .cc-label { font-size: 0.6rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }        .chart-legend { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }        .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; padding: 6px 10px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); }        .li-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; display: inline-block; }        .li-name { font-weight: 600; color: var(--text); flex: 1; }        .li-val { font-weight: 800; color: var(--primary); }        /* --- CONTENT & LISTS --- */        .main-container { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 100px; scroll-behavior: smooth; }        .section-title { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; }        .section-title::before { content:''; width:4px; height:18px; background:var(--accent); border-radius:2px; }        .filter-bar { background: var(--surface); padding: 1rem; border-radius: 1rem; border: 1px solid var(--line); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }        .filter-row { display: flex; gap: 8px; }        .filter-input { flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.8rem; font-family: inherit; color: var(--text); background: var(--bg); }        .btn-filter { padding: 8px 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }        .btn-recap { padding: 8px 12px; background: var(--accent); color: var(--primary); border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; }        .btn-export { padding: 8px 12px; background: #065f46; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center; }        .report-card { background: var(--surface); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.03); border: 1px solid var(--line); display: flex; gap: 12px; }        .rc-date { min-width: 50px; text-align: center; border-right: 1px solid var(--line); padding-right: 12px; display: flex; flex-direction: column; justify-content: center; }        .rc-time { font-size: 0.9rem; font-weight: 800; color: var(--primary); }        .rc-day { font-size: 0.6rem; font-weight: 600; color: var(--text-sub); }        .rc-info { flex: 1; overflow: hidden; }        .rc-badge { font-size: 0.6rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 4px; background: var(--bg); color: var(--primary); text-transform: uppercase; border: 1px solid var(--line); }        .rc-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }        .rc-desc { font-size: 0.75rem; color: var(--text-sub); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }                .card-actions { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--bg); margin-top: 8px; }        .action-btn { flex: 1; border: none; border-radius: 8px; padding: 6px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s; }        .action-btn:active { transform: scale(0.95); }        .btn-view { background: #e0f2fe; color: #0284c7; }        .btn-print { background: #dcfce7; color: #166534; }        .btn-edit { background: var(--bg); color: var(--accent-dark); border: 1px solid var(--accent); }        .btn-del { background: #fee2e2; color: #b91c1c; }        /* --- SETTINGS UI --- */        .tabs { display: flex; background: var(--surface); padding: 4px; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--line); }        .tab { flex: 1; padding: 10px; text-align: center; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; color: var(--text-sub); transition: 0.2s; }        .tab.active { background: var(--primary); color: var(--accent); }        .mgmt-item { display: flex; align-items: center; gap: 12px; background: var(--surface); padding: 1rem; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 10px; }        .mi-photo { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: var(--bg); border: 1px solid var(--line); }        .mi-info { flex: 1; }        .mi-name { font-weight: 800; font-size: 0.9rem; display: block; color: var(--primary); }        .mi-sub { font-size: 0.7rem; color: var(--text-sub); display: block; margin-top: 2px; }        .mc-actions { display: flex; gap: 5px; }        .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; }        .btn-red { background: #fee2e2; color: #b91c1c; }        .btn-blue { background: #e0f2fe; color: #0284c7; }        .btn-yellow { background: var(--bg); color: var(--accent-dark); border: 1px solid var(--accent); }        /* --- BOTTOM NAV --- */        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: var(--surface); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -5px 20px rgba(27, 77, 62, 0.1); z-index: 40; border-top: 1px solid var(--line); }        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-sub); font-weight: 700; font-size: 0.65rem; width: 60px; cursor: pointer; transition: 0.2s; }        .nav-btn svg { width: 24px; height: 24px; stroke-width: 2.5; }        .nav-btn.active { color: var(--primary); }        .fab-center { position: relative; top: -25px; width: 60px; height: 60px; background: var(--accent-grad); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary); box-shadow: 0 10px 20px rgba(212, 196, 150, 0.6); border: 4px solid var(--bg); cursor: pointer; transition: 0.2s; }        .fab-center:active { transform: scale(0.90); }        /* --- MODALS --- */        .modal { position: fixed; inset: 0; background: rgba(27, 77, 62, 0.9); z-index: 100; display: none; flex-direction: column; justify-content: flex-end; }        .modal.show { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }        .modal-content { background: var(--bg); width: 100%; max-height: 92vh; border-top-left-radius: 2rem; border-top-right-radius: 2rem; display: flex; flex-direction: column; position: relative; }        .m-head { padding: 1.2rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; border-top-left-radius: 2rem; border-top-right-radius: 2rem; flex-shrink: 0; }        .m-title { font-size: 1.1rem; font-weight: 800; color: var(--primary); }        .m-close { background: var(--bg); border: 1px solid var(--line); width: 32px; height: 32px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }        .m-body { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 5rem; }         .form-group { margin-bottom: 1.2rem; }        .form-label { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 6px; display: block; }        .form-input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: inherit; font-size: 0.95rem; color: var(--primary); }        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: var(--accent); border: none; border-radius: 14px; font-weight: 800; text-transform: uppercase; margin-top: 1rem; cursor: pointer; transition: 0.2s; }                /* Modern Card in Modal (Detail) */        .modern-modal-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border:1px solid var(--line); }        .mm-header { background: var(--primary); padding: 1.5rem; color: white; position: relative; overflow: hidden; }        .mm-header::after { content:''; position: absolute; bottom: -20px; right: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; }        .mm-header h4 { font-size: 0.8rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }        .mm-header h2 { font-size: 1.4rem; font-weight: 800; line-height: 1.2; }        .mm-body { padding: 1.5rem; }        .mm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }        .mm-box { background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--line); }        .mm-box label { font-size: 0.65rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; display: block; margin-bottom: 2px; }        .mm-box span { font-size: 0.9rem; font-weight: 700; color: var(--primary); }        .mm-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }        .mm-photo { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }        .photo-circle-large { width: 120px; height: 120px; border-radius: 50%; background: var(--line); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 5px solid var(--surface); box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative; cursor: pointer; }        .photo-circle-large img { width: 100%; height: 100%; object-fit: cover; }        .photo-overlay { position: absolute; bottom: 0; width: 100%; height: 30px; background: rgba(27, 77, 62, 0.8); display: flex; justify-content: center; align-items: center; }        .photo-overlay span { color: var(--accent); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }        .menu-item { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem 0.5rem; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }        .mi-icon { font-size: 1.8rem; }        .mi-text { font-size: 0.7rem; font-weight: 700; color: var(--primary); text-align: center; }                .personnel-list { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--surface); max-height: 150px; overflow-y: auto; }        .personnel-check { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }        .detail-row { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 12px; }        .dr-label { font-size: 0.65rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }        .dr-val { font-size: 0.95rem; color: var(--primary); font-weight: 600; margin-top: 4px; line-height: 1.4; }                .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; display: none; }        @keyframes spin { to { transform: rotate(360deg); } }        /* --- STYLE CSS UNTUK PRINT IFRAME (SUMBER TEMPLATE) --- */        #print-css-source { display: none; }    </style>        <!-- CSS UNTUK PRINT YANG AKAN DIINJECT KE IFRAME -->    <style id="print-css-source">        /* SAYA HAPUS @PAGE DISINI AGAR BISA DIINJECT DINAMIS VIA JS */        /* @page { margin: 10mm; size: A4; }  <-- DIHAPUS */                body { margin: 0; padding: 0; background: white; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }                /* Layout Cetak */        .mp-container { width: 100%; max-width: 100%; margin: 0 auto; background: white; padding: 10px; box-sizing: border-box; position: relative; }        .mp-watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 4rem; font-weight: 900; color: rgba(27, 77, 62, 0.04); z-index: -1; pointer-events: none; text-transform: uppercase; letter-spacing: 10px; }                .mp-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 3px solid #1b4d3e; margin-bottom: 25px; }        .mp-brand { display: flex; flex-direction: column; }        .mp-brand h1 { font-size: 20pt; font-weight: 900; color: #1b4d3e; line-height: 1; margin: 0; }        .mp-brand span { font-size: 8pt; font-weight: 700; color: #b0a072; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }                .mp-meta-box { text-align: right; }        .mp-id { font-family: 'Courier New', monospace; font-size: 11pt; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }        .mp-date { font-size: 9pt; font-weight: 600; color: #1b4d3e; margin-top: 6px; }                .mp-hero { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; border-left: 5px solid #1b4d3e; }        .mp-title-block { flex: 1; }        .mp-category { display: inline-block; background: #1b4d3e; padding: 3px 8px; border-radius: 4px; font-size: 7pt; font-weight: 700; text-transform: uppercase; color: white; margin-bottom: 6px; }        .mp-main-title { font-size: 16pt; font-weight: 800; color: #0f172a; line-height: 1.3; margin: 0; }        .mp-status-badge { background: white; color: #166534; padding: 6px 12px; border-radius: 8px; font-size: 9pt; font-weight: 800; text-transform: uppercase; border: 1px solid #bbf7d0; align-self: center; }                .mp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; break-inside: avoid; }        .mp-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; }        .mp-label { font-size: 7pt; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 3px; }        .mp-val { font-size: 10pt; font-weight: 600; color: #334155; line-height: 1.3; }                .mp-section { margin-bottom: 20px; break-inside: avoid; }        .mp-section-head { font-size: 9pt; font-weight: 800; color: #1b4d3e; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 8px; }        .mp-text { font-size: 9.5pt; line-height: 1.5; color: #334155; text-align: justify; }                .mp-chips { display: flex; flex-wrap: wrap; gap: 6px; }        .mp-chip { background: white; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 20px; font-size: 8.5pt; font-weight: 600; color: #475569; }                .mp-photos-container { break-inside: avoid; margin-top: 10px; }        .mp-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }        .mp-photo-box { border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: white; padding: 6px; }        .mp-photo-box img { width: 100%; height: 180px; object-fit: cover; border-radius: 4px; display: block; }        .mp-caption { text-align: center; font-size: 7.5pt; color: #64748b; font-weight: 700; padding: 8px 0 2px; text-transform: uppercase; }                .mp-footer { margin-top: 40px; padding-top: 15px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; break-inside: avoid; }        .mp-sign-box { text-align: left; }        .mp-qr-box { text-align: right; display: flex; align-items: center; gap: 10px; }        .mp-qr-code { width: 55px; height: 55px; border-radius: 4px; border: 1px solid #e2e8f0; padding: 3px; background: white; }        /* Tabel Rekap */        .mr-container { width: 100%; margin: 0 auto; background: white; padding: 10px; box-sizing: border-box; }        .mr-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1b4d3e; padding-bottom: 15px; margin-bottom: 25px; }        .mr-brand h1 { font-size: 20pt; font-weight: 900; color: #1b4d3e; margin: 0; line-height: 1; }        .mr-brand span { font-size: 8pt; font-weight: 700; color: #d4c496; text-transform: uppercase; letter-spacing: 2px; }        .mr-title-box { text-align: right; }        .mr-title-main { font-size: 14pt; font-weight: 800; color: #0f172a; text-transform: uppercase; margin: 0; }        .mr-period { font-size: 9pt; color: #64748b; font-weight: 600; background: #f1f5f9; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-top: 5px; }                .mr-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 20px; }        .mr-table thead th { background-color: #1b4d3e !important; color: white !important; font-weight: 700; text-transform: uppercase; padding: 10px 8px; text-align: left; font-size: 8pt; border: none; }        .mr-table tbody td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; color: #334155; line-height: 1.4; }        .mr-table tbody tr:nth-child(even) { background-color: #f8fafc !important; }        .mr-cat-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 6.5pt; font-weight: 800; text-transform: uppercase; background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }        .mr-judul { font-weight: 700; color: #0f172a; font-size: 9pt; }                .mr-footer { margin-top: 30px; display: flex; justify-content: flex-end; page-break-inside: avoid; }        .mr-sign-box { width: 220px; text-align: center; }        .mr-sign-date { font-size: 10pt; color: #64748b; margin-bottom: 5px; }        .mr-sign-title { font-size: 10pt; font-weight: 700; color: #1e293b; margin-bottom: 50px; }        .mr-sign-name { font-size: 11pt; font-weight: 800; color: #1e293b; border-bottom: 2px solid #cbd5e1; display: inline-block; padding-bottom: 2px; }    </style>    <script>        // --- 1. INDEXED DB WRAPPER ---        const IDB_NAME = 'SiKERIS_DB';        const IDB_VERSION = 1;        const dbPromise = new Promise((resolve, reject) => {            const request = indexedDB.open(IDB_NAME, IDB_VERSION);            request.onupgradeneeded = (e) => {                const db = e.target.result;                if (!db.objectStoreNames.contains('reports')) db.createObjectStore('reports', { keyPath: 'id' });                if (!db.objectStoreNames.contains('members')) db.createObjectStore('members', { keyPath: 'id' });                if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'id' });            };            request.onsuccess = (e) => resolve(e.target.result);            request.onerror = (e) => reject(e);        });        const DB = {            getAll: async (storeName) => {                const db = await dbPromise;                return new Promise((resolve, reject) => {                    const tx = db.transaction(storeName, 'readonly');                    const store = tx.objectStore(storeName);                    const req = store.getAll();                    req.onsuccess = () => {                        const res = req.result || [];                        res.sort((a, b) => (b.id > a.id) ? 1 : -1);                         resolve(res);                    };                    req.onerror = () => reject(req.error);                });            },            add: async (storeName, item) => {                const db = await dbPromise;                if(!item.id) item.id = Date.now().toString();                item.createdAt = new Date().toISOString();                return new Promise((resolve, reject) => {                    const tx = db.transaction(storeName, 'readwrite');                    const store = tx.objectStore(storeName);                    store.add(item);                    tx.oncomplete = () => resolve(item);                    tx.onerror = () => reject(tx.error);                });            },            update: async (storeName, id, data) => {                const db = await dbPromise;                return new Promise((resolve, reject) => {                    const tx = db.transaction(storeName, 'readwrite');                    const store = tx.objectStore(storeName);                    const req = store.get(id);                    req.onsuccess = () => {                        const item = req.result;                        if (item) {                            const updated = { ...item, ...data, updatedAt: new Date().toISOString() };                            store.put(updated);                            resolve(updated);                        } else {                            resolve(null);                        }                    };                    req.onerror = () => reject(req.error);                });            },            delete: async (storeName, id) => {                const db = await dbPromise;                return new Promise((resolve, reject) => {                    const tx = db.transaction(storeName, 'readwrite');                    const store = tx.objectStore(storeName);                    store.delete(id);                    tx.oncomplete = () => resolve();                    tx.onerror = () => reject(tx.error);                });            },            migrateFromLocalStorage: async () => {                try {                    const lsReports = JSON.parse(localStorage.getItem('reports') || '[]');                    const lsMembers = JSON.parse(localStorage.getItem('members') || '[]');                    const lsUsers = JSON.parse(localStorage.getItem('users') || '[]');                    if (lsReports.length > 0) { for (const r of lsReports) await DB.add('reports', r); localStorage.removeItem('reports'); }                    if (lsMembers.length > 0) { for (const m of lsMembers) await DB.add('members', m); localStorage.removeItem('members'); }                    if (lsUsers.length > 0) { for (const u of lsUsers) await DB.add('users', u); localStorage.removeItem('users'); }                } catch (e) { console.log("Migration check done"); }            },            reset: async () => {                if(window.confirm('PERINGATAN: Semua data akan dihapus PERMANEN. Lanjutkan?')) {                    const db = await dbPromise;                    const stores = ['reports', 'members', 'users'];                    const tx = db.transaction(stores, 'readwrite');                    stores.forEach(s => tx.objectStore(s).clear());                    localStorage.clear();                    location.reload();                }            }        };        // --- 2. UTILS ---        function compressImage(file, maxWidth, quality, callback) {            const reader = new FileReader();            reader.readAsDataURL(file);            reader.onload = event => {                const img = new Image();                img.src = event.target.result;                img.onload = () => {                    const canvas = document.createElement('canvas');                    let width = img.width;                    let height = img.height;                    if (width > maxWidth) {                        height *= maxWidth / width;                        width = maxWidth;                    }                    canvas.width = width;                    canvas.height = height;                    const ctx = canvas.getContext('2d');                    ctx.drawImage(img, 0, 0, width, height);                    callback(canvas.toDataURL('image/jpeg', quality));                };            };        }        function escapeJson(obj) { return JSON.stringify(obj).replace(/'/g, "&apos;").replace(/"/g, "&quot;"); }        function formatDateIndo(dateStr) {            const d = new Date(dateStr);            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];            const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];            return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;        }        function formatTime(dateStr) {             const d = new Date(dateStr);             return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;        }        // --- 3. VARIABLES ---        let currentMgmtTab = 'members';        let selectedCategory = '';        let editingId = null;        let photoBase64 = null, photo1 = null, photo2 = null;        let currentReports = [];        const defaultPhoto = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjY2JkNWUxIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNCIvPjxwYXRoIGQ9Ik02IDIxdjYtM2E2IDYgMCAwIDEgMTItM3YzYTYgNiAwIDAgMS02IDN6Ii8+PC9zdmc+";        // --- 4. AUTH & INIT ---        async function doLogin() {            const u = document.getElementById('l-user').value;            const p = document.getElementById('l-pass').value;            const users = await DB.getAll('users');            const found = users.find(x => x.user === u && x.pass === p);                        if((u === 'admin' && p === 'admin') || found) {                document.getElementById('login-overlay').classList.add('hidden');                localStorage.setItem('isLoggedIn', 'true');                localStorage.setItem('currentUser', u);            } else {                alert("Login Gagal!");            }        }        function doLogout() {            if(window.confirm('Keluar dari aplikasi SiKERIS?')) {                localStorage.removeItem('isLoggedIn');                location.reload();            }        }        function checkLogin() {            if(localStorage.getItem('isLoggedIn') === 'true') {                document.getElementById('login-overlay').classList.add('hidden');            } else {                document.getElementById('login-overlay').classList.remove('hidden');            }        }        window.onload = async () => {            await DB.migrateFromLocalStorage();            checkLogin();             // Initialize Event Listeners            document.getElementById('form-mem').addEventListener('submit', saveMember);            document.getElementById('form-user').addEventListener('submit', saveUser);            document.getElementById('form-report').addEventListener('submit', saveReport);            document.getElementById('form-login').addEventListener('submit', (e) => { e.preventDefault(); doLogin(); });                        // Search Personil Logic            document.getElementById('search-personil').addEventListener('input', function(e) {                const term = e.target.value.toLowerCase();                document.querySelectorAll('.personnel-check').forEach(item => {                    item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';                });            });            // Initial Data Load            const members = await DB.getAll('members');            if(members.length === 0) {                await DB.add('members', {nama: "Budi Santoso", nip: "198001012005011001", pangkat:"Gol II/a", jabatan: "Danru", foto: ""});            }                        loadReports();            loadMembers();            loadUsers();        };        // --- 5. CHART LOGIC ---        async function renderChart(data) {            const counts = {};            const cats = ['Patroli','Penegakan Perda','Trantibum','PAM/WAL','Sosialisasi','Deteksi Dini'];            const colors = ['#1b4d3e', '#2d7a61', '#d4c496', '#b0a072', '#5f7d75', '#a3b18a'];                        cats.forEach(c => counts[c] = 0);            data.forEach(r => { if(counts[r.kategori] !== undefined) counts[r.kategori]++; });            const total = data.length;            document.getElementById('chart-total').innerText = total;            document.getElementById('stat-total').innerText = total;            const canvas = document.getElementById('activityChart');            if(!canvas) return;            const ctx = canvas.getContext('2d');            const w = canvas.width; const h = canvas.height; const radius = w / 2;            ctx.clearRect(0, 0, w, h);                        if(total === 0) {                ctx.beginPath(); ctx.arc(w/2, h/2, radius, 0, 2 * Math.PI);                ctx.fillStyle = '#e2e8f0'; ctx.fill();                ctx.globalCompositeOperation = 'destination-out';                ctx.beginPath(); ctx.arc(w/2, h/2, radius * 0.65, 0, 2 * Math.PI); ctx.fill();                ctx.globalCompositeOperation = 'source-over';                document.getElementById('chart-legend').innerHTML = '<p style="text-align:center;font-size:0.7rem;color:#ccc">Data kosong.</p>';                return;            }            let startAngle = 0; let legendHtml = '';            cats.forEach((cat, i) => {                const count = counts[cat];                if(count > 0) {                    const sliceAngle = (count / total) * 2 * Math.PI;                    ctx.beginPath(); ctx.moveTo(w/2, h/2);                    ctx.arc(w/2, h/2, radius, startAngle, startAngle + sliceAngle);                    ctx.fillStyle = colors[i]; ctx.fill();                    startAngle += sliceAngle;                    legendHtml += `<div class="legend-item"><div style="display:flex;align-items:center"><span class="li-dot" style="background:${colors[i]}"></span><span class="li-name">${cat}</span></div><span class="li-val">${count}</span></div>`;                }            });            ctx.globalCompositeOperation = 'destination-out';            ctx.beginPath(); ctx.arc(w/2, h/2, radius * 0.65, 0, 2 * Math.PI); ctx.fill();            ctx.globalCompositeOperation = 'source-over';            document.getElementById('chart-legend').innerHTML = legendHtml;        }        // --- 6. NAVIGASI & MODALS ---        function switchTab(tab) {            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));                        const widgets = document.getElementById('home-widgets');            if(tab === 'home') { if(widgets) widgets.classList.remove('hidden'); }             else { if(widgets) widgets.classList.add('hidden'); }                        document.getElementById(`view-${tab}`).classList.remove('hidden');            document.getElementById(`nav-${tab}`).classList.add('active');             if(tab === 'home' || tab === 'archive') loadReports();        }        function switchMgmtTab(tab) {            currentMgmtTab = tab;            document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));            document.getElementById(`tab-${tab}`).classList.add('active');            document.getElementById('mgmt-members').classList.add('hidden');            document.getElementById('mgmt-users').classList.add('hidden');            document.getElementById(`mgmt-${tab}`).classList.remove('hidden');        }        function openModal(id) { document.getElementById(id).classList.add('show'); }        function closeModal(id) { document.getElementById(id).classList.remove('show'); }        function openAddMgmt() {            if(currentMgmtTab === 'members') {                editingId = null; photoBase64 = null;                document.getElementById('form-mem').reset();                document.getElementById('m-prev').src = defaultPhoto;                document.getElementById('mem-modal-title').innerText = "Tambah Anggota";                openModal('modal-member');            } else {                document.getElementById('form-user').reset();                openModal('modal-user');            }        }        function openMenu() {              const settingsView = document.getElementById('view-settings');             if (!settingsView.classList.contains('hidden')) { openAddMgmt(); }              else { openModal('modal-menu'); }        }        // --- 7. LOGIC ANGGOTA ---        function handleMemberPhoto(input) {            const file = input.files[0]; if(!file) return;            compressImage(file, 300, 0.7, (compressedResult) => {                photoBase64 = compressedResult;                document.getElementById('m-prev').src = photoBase64;            });        }        async function saveMember(e) {            e.preventDefault();            const d = { nama: document.getElementById('m-nama').value, nip: document.getElementById('m-nip').value, pangkat: document.getElementById('m-pangkat').value, jabatan: document.getElementById('m-jab').value, foto: photoBase64 };            if(editingId) {                if(!photoBase64) {                    const mems = await DB.getAll('members');                    const old = mems.find(x => x.id === editingId);                    if(old) d.foto = old.foto;                }                await DB.update('members', editingId, d);            } else { await DB.add('members', d); }            closeModal('modal-member'); loadMembers();        }        async function deleteMember(id) { if(window.confirm("Hapus anggota ini?")) { await DB.delete('members', id); loadMembers(); } }        async function editMember(id) {            const mems = await DB.getAll('members'); const mem = mems.find(m => m.id === id); if(!mem) return;            editingId = id; photoBase64 = null;            document.getElementById('mem-modal-title').innerText = "Edit Anggota";            document.getElementById('m-nama').value = mem.nama;            document.getElementById('m-nip').value = mem.nip || '';            document.getElementById('m-pangkat').value = mem.pangkat || '';            document.getElementById('m-jab').value = mem.jabatan;            document.getElementById('m-prev').src = mem.foto || defaultPhoto;            openModal('modal-member');        }        async function viewMemberDetail(id) {            const mems = await DB.getAll('members'); const mem = mems.find(m => m.id === id); if(!mem) return;            document.getElementById('dm-img').src = mem.foto || defaultPhoto;            document.getElementById('dm-name').innerText = mem.nama;            document.getElementById('dm-nip').innerText = mem.nip || '-';            document.getElementById('dm-pangkat').innerText = mem.pangkat || '-';            document.getElementById('dm-jab').innerText = mem.jabatan;            openModal('modal-member-detail');        }        async function loadMembers() {            const d = await DB.getAll('members');            document.getElementById('list-members').innerHTML = d.length ? d.map(m => `                <div class="mgmt-item fade-in">                    <img src="${m.foto || ''}" class="mi-photo" onerror="this.src='${defaultPhoto}'">                    <div class="mi-info"><div class="mi-name">${m.nama}</div><div class="mi-sub">${m.nip || '-'}</div><div class="mi-sub" style="color:var(--accent-dark)">${m.jabatan}</div></div>                    <div class="mc-actions"><button onclick="viewMemberDetail('${m.id}')" class="btn-icon btn-blue">👁️</button><button onclick="editMember('${m.id}')" class="btn-icon btn-yellow">✏️</button><button onclick="deleteMember('${m.id}')" class="btn-icon btn-red">🗑️</button></div>                </div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada anggota.</p>';        }        // --- 8. LOGIC USER ---        async function saveUser(e) {            e.preventDefault();            const uName = document.getElementById('u-name').value;            const uPass = document.getElementById('u-pass').value;            if (uName === 'admin') return;            await DB.add('users', { user: uName, pass: uPass });            closeModal('modal-user'); loadUsers();        }        async function loadUsers() {            const d = await DB.getAll('users');            document.getElementById('list-users').innerHTML = d.length ? d.map(u => `                <div class="mgmt-item fade-in"><div class="mi-info"><div class="mi-name">User: ${u.user}</div><div class="mi-sub">Pass: ${u.pass}</div></div><button onclick="deleteUser('${u.id}')" class="btn-icon btn-red">🗑️</button></div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada akun tambahan.</p>';        }        async function deleteUser(id) { if(window.confirm('Hapus user?')) { await DB.delete('users', id); loadUsers(); } }        // --- 9. LOGIC LAPORAN ---        async function startReport(cat) {            selectedCategory = cat;            closeModal('modal-menu'); openModal('modal-report');            document.getElementById('form-report').reset();            document.getElementById('rep-title').innerText = cat;            document.getElementById('search-personil').value = '';             photo1=null; photo2=null; editingId=null;            document.getElementById('prev1').src=""; document.getElementById('prev1').style.display='none';            document.getElementById('prev2').src=""; document.getElementById('prev2').style.display='none';                        // Logic Placeholder            const tgt = document.getElementById('i-target');            const temuanInput = document.getElementById('i-temuan');            if(cat === 'Penegakan Perda') { tgt.placeholder = "Nama Pelanggar / Usaha"; temuanInput.placeholder = "Detail Temuan Pelanggaran..."; }             else { tgt.placeholder = "Identitas Sasaran..."; temuanInput.placeholder = "Temuan Penting di Lapangan..."; }            const mems = await DB.getAll('members');            document.getElementById('list-personil').innerHTML = mems.length ? mems.map(m => `                <label class="personnel-check"><input type="checkbox" class="chk-person" value='${escapeJson({nama:m.nama, nip:m.nip, pangkat:m.pangkat, jabatan:m.jabatan})}'><span style="font-size:0.9rem">${m.nama} (${m.jabatan})</span></label>`).join('') : '<p style="font-size:0.8rem;color:#ef4444;">*Input anggota dulu</p>';        }        function handleReportPhoto(input, num) {            const f = input.files[0]; if(!f) return;            compressImage(f, 500, 0.7, (result) => {                  if(num===1) { photo1 = result; const img = document.getElementById('prev1'); img.src=photo1; img.style.display='block'; }                  else { photo2 = result; const img = document.getElementById('prev2'); img.src=photo2; img.style.display='block'; }            });        }        async function saveReport(e) {            e.preventDefault();            const checks = document.querySelectorAll('.chk-person:checked');            const personil = []; checks.forEach(c => personil.push(JSON.parse(c.value)));                        let currentPhoto1 = photo1; let currentPhoto2 = photo2;            if (editingId) {                 const oldReport = currentReports.find(r => r.id === editingId) || (await DB.getAll('reports')).find(r => r.id === editingId);                 if (oldReport) {                    if (!currentPhoto1) currentPhoto1 = oldReport.foto1;                    if (!currentPhoto2) currentPhoto2 = oldReport.foto2;                 }            }            const d = {                kategori: selectedCategory, judul: document.getElementById('i-judul').value, lokasi: document.getElementById('i-lokasi').value, target: document.getElementById('i-target').value, uraian: document.getElementById('i-uraian').value, temuan: document.getElementById('i-temuan').value, tindakan: document.getElementById('i-tindakan').value, situasi: document.getElementById('i-situasi').value, perda: document.getElementById('i-perda').value, personil: personil, foto1: currentPhoto1, foto2: currentPhoto2            };            if(editingId) { await DB.update('reports', editingId, d); }            else { await DB.add('reports', d); }            closeModal('modal-report'); loadReports(); switchTab('archive');        }        function filterReports() { loadReports(); }        function resetFilter() { document.getElementById('f-start').value = ''; document.getElementById('f-end').value = ''; document.getElementById('f-cat').value = ''; loadReports(); }        async function loadReports() {            let d = await DB.getAll('reports');            const startStr = document.getElementById('f-start').value;            const endStr = document.getElementById('f-end').value;            const cat = document.getElementById('f-cat').value;                        const today = new Date(); today.setHours(0,0,0,0);            const todayReports = d.filter(r => { const rDate = new Date(r.createdAt); rDate.setHours(0,0,0,0); return rDate.getTime() === today.getTime(); });            document.getElementById('stat-today').innerText = todayReports.length;            if(startStr) { const startDate = new Date(startStr); startDate.setHours(0,0,0,0); d = d.filter(r => new Date(r.createdAt) >= startDate); }            if(endStr) { const endDate = new Date(endStr); endDate.setHours(23,59,59,999); d = d.filter(r => new Date(r.createdAt) <= endDate); }            if(cat) { d = d.filter(r => r.kategori === cat); }            currentReports = d;            renderChart(await DB.getAll('reports'));             const html = (i) => {                const date = new Date(i.createdAt); const month = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"]; const str = escapeJson(i);                return `                <div class="report-card fade-in">                    <div class="rc-date"><div class="rc-time">${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</div><div class="rc-day">${date.getDate()} ${month[date.getMonth()]}</div></div>                    <div class="rc-info"><span class="rc-badge">${i.kategori}</span><div class="rc-title">${i.judul}</div><div class="rc-desc">${i.uraian}</div>                        <div class="card-actions"><button onclick='viewDetail(${str})' class="action-btn btn-view">👁️ Lihat</button><button onclick='printReport(${str})' class="action-btn btn-print">🖨️ Cetak</button><button onclick='editReport(${str})' class="action-btn btn-edit">✏️ Edit</button><button onclick="deleteReport('${i.id}')" class="action-btn btn-del">🗑️</button></div>                    </div>                </div>`;            };            document.getElementById('list-archive').innerHTML = d.length ? d.map(html).join('') : '<div style="text-align:center;margin-top:50px;color:#ccc"><p>Tidak ada laporan.</p></div>';            // Home Limit 3            const allReports = await DB.getAll('reports');            document.getElementById('list-home').innerHTML = allReports.length ? allReports.slice(0,3).map(html).join('') : '<div style="text-align:center;margin-top:20px;color:#ccc"><p>Belum ada kegiatan.</p></div>';        }        async function deleteReport(id) { if(window.confirm('Hapus laporan?')) { await DB.delete('reports', id); loadReports(); } }        async function editReport(i) {            await startReport(i.kategori);             document.getElementById('rep-title').innerText = `Edit Laporan: ${i.judul}`; editingId = i.id;            document.getElementById('i-judul').value = i.judul; document.getElementById('i-lokasi').value = i.lokasi; document.getElementById('i-target').value = i.target; document.getElementById('i-uraian').value = i.uraian; document.getElementById('i-temuan').value = i.temuan || ''; document.getElementById('i-tindakan').value = i.tindakan; document.getElementById('i-situasi').value = i.situasi; document.getElementById('i-perda').value = i.perda || '';            photo1 = i.foto1; photo2 = i.foto2;            const p1=document.getElementById('prev1'); const p2=document.getElementById('prev2');            if(i.foto1) { p1.src=i.foto1; p1.style.display='block'; } else { p1.style.display='none'; }            if(i.foto2) { p2.src=i.foto2; p2.style.display='block'; } else { p2.style.display='none'; }            const mems = i.personil.map(p => p.nama);            document.querySelectorAll('.chk-person').forEach(chk => { const person = JSON.parse(chk.value); chk.checked = mems.includes(person.nama); });        }        function viewDetail(i) {            document.getElementById('mm-kategori').innerText = i.kategori; document.getElementById('mm-judul').innerText = i.judul;            document.getElementById('mm-date').innerText = formatDateIndo(i.createdAt); document.getElementById('mm-time').innerText = `${formatTime(i.createdAt)} WIB`;            document.getElementById('mm-loc').innerText = i.lokasi; document.getElementById('mm-status').innerText = i.situasi || "Aman";            document.getElementById('mm-uraian').innerText = i.uraian;            const temuanEl = document.getElementById('mm-temuan-block');            if(i.temuan) { temuanEl.style.display = 'block'; document.getElementById('mm-temuan').innerText = i.temuan; } else { temuanEl.style.display = 'none'; }            document.getElementById('mm-tindakan').innerText = i.tindakan || "-";            const photoContainer = document.getElementById('mm-photos'); photoContainer.innerHTML = '';            if(i.foto1) photoContainer.innerHTML += `<img src="${i.foto1}" class="mm-photo">`;            if(i.foto2) photoContainer.innerHTML += `<img src="${i.foto2}" class="mm-photo">`;            openModal('modal-detail');        }        // --- 10. EXPORT & SHARE ---        function exportToCSV() {            if(currentReports.length === 0) { alert('Tidak ada data.'); return; }            let csvContent = "data:text/csv;charset=utf-8,Tanggal,Waktu,Kategori,Judul,Lokasi,Sasaran,Uraian,Temuan,Tindakan,Status\n";            currentReports.forEach(r => {                const d = new Date(r.createdAt); const tgl = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;                const jam = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;                const clean = (text) => text ? `"${text.replace(/"/g, '""').replace(/\n/g, ' ')}"` : '""';                const row = [tgl, jam, clean(r.kategori), clean(r.judul), clean(r.lokasi), clean(r.target), clean(r.uraian), clean(r.temuan), clean(r.tindakan), clean(r.situasi)].join(",");                csvContent += row + "\n";            });            const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `Laporan_Satpol_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);        }        function shareViaWA() {            const element = document.querySelector('.modern-modal-card'); const spinner = document.getElementById('share-spinner'); const btnText = document.getElementById('share-text');            spinner.style.display = 'block'; btnText.style.display = 'none';            html2canvas(element, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {                canvas.toBlob(async blob => {                    const file = new File([blob], "laporan_satpol.jpg", { type: "image/jpeg" });                    if (navigator.share) {                        try { await navigator.share({ title: 'Laporan SiKERIS', text: 'Laporan Giat Satpol PP', files: [file] }); } catch (err) { console.error("Share failed:", err); }                    } else { const link = document.createElement('a'); link.href = canvas.toDataURL('image/jpeg'); link.download = 'Laporan-Giat.jpg'; link.click(); alert('Gambar diunduh. Kirim manual via WA.'); }                    spinner.style.display = 'none'; btnText.style.display = 'block';                }, 'image/jpeg', 0.9);            });        }        // ============================================================        // === PRINTING SOLUTION FOR MOBILE (IFRAME METHOD) ===        // ============================================================        // FUNGSI INTI: Mencetak Iframe dengan Orientasi Dinamis (Portrait/Landscape)        function printContent(contentId, orientation = 'portrait') {            const content = document.getElementById(contentId).innerHTML;            const printStyle = document.getElementById('print-css-source').innerHTML;            let iframe = document.getElementById('print-iframe');            if (!iframe) {                iframe = document.createElement('iframe');                iframe.id = 'print-iframe';                iframe.style.position = 'absolute'; iframe.style.width = '0px'; iframe.style.height = '0px'; iframe.style.border = 'none'; iframe.style.left = '-1000px';                document.body.appendChild(iframe);            }            const doc = iframe.contentWindow.document;            doc.open();                        // DISINI KITA INJECT @PAGE SIZE SECARA DINAMIS SESUAI PERMINTAAN            const pageRule = `@page { size: A4 ${orientation}; margin: 10mm; }`;                        doc.write(`<html><head><title>Cetak</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>${pageRule} ${printStyle} body{margin:0;padding:0;background:white;}</style></head><body>${content}<script>window.onload=function(){setTimeout(function(){window.print();}, 800);}<\/script></body></html>`);            doc.close();        }        function printReport(r) {            const dateStr = formatDateIndo(r.createdAt);            document.getElementById('mp-cat').innerText = r.kategori || "UMUM";            document.getElementById('mp-title').innerText = r.judul;            document.getElementById('mp-id').innerText = `#RPT-${r.id.slice(-3)}`;            document.getElementById('mp-date-top').innerText = dateStr;            document.getElementById('mp-time').innerText = formatTime(r.createdAt) + " WIB";            document.getElementById('mp-loc').innerText = r.lokasi;            document.getElementById('mp-target').innerText = r.target || '-';            document.getElementById('mp-status').innerText = r.situasi || "Aman";            const perdaEl = document.getElementById('mp-perda-box');            if(r.perda) { perdaEl.style.display = 'flex'; document.getElementById('mp-perda').innerText = r.perda; } else { perdaEl.style.display = 'none'; }                        document.getElementById('mp-uraian').innerHTML = r.uraian ? r.uraian.replace(/\n/g, '<br>') : "-";            const temuanSec = document.getElementById('mp-section-temuan');            if(r.temuan) { temuanSec.style.display='block'; document.getElementById('mp-temuan').innerHTML = r.temuan.replace(/\n/g, '<br>'); } else { temuanSec.style.display='none'; }            document.getElementById('mp-tindakan').innerHTML = r.tindakan ? r.tindakan.replace(/\n/g, '<br>') : "-";            let photoHtml = '';            if(r.foto1) photoHtml += `<div class="mp-photo-box"><img src="${r.foto1}"><div class="mp-caption">Dokumentasi 1</div></div>`;            if(r.foto2) photoHtml += `<div class="mp-photo-box"><img src="${r.foto2}"><div class="mp-caption">Dokumentasi 2</div></div>`;            document.getElementById('mp-photos').innerHTML = photoHtml || '<div style="grid-column:span 2;text-align:center;padding:20px;color:#ccc;">Tidak ada foto</div>';                        let pHtml = '';            if(r.personil && r.personil.length) { r.personil.forEach(p => { pHtml += `<div class="mp-chip">${p.nama}</div>`; }); }             document.getElementById('mp-personnel').innerHTML = pHtml;                        document.getElementById('mp-sign-date').innerText = `Tarempa, ${dateStr}`;                        // CETAK SATUAN -> PORTRAIT            printContent('print-template-single', 'portrait');        }        function printRecap() {            let rows = '';            currentReports.forEach((item, index) => {                rows += `<tr><td style="text-align:center;font-weight:bold">${index + 1}</td><td><span style="display:block;font-weight:bold;color:#1b4d3e">${formatDateIndo(item.createdAt)}</span><span style="font-size:0.8em;color:#666">${formatTime(item.createdAt)} WIB</span></td><td><span class="mr-cat-badge">${item.kategori}</span></td><td><div class="mr-judul">${item.judul}</div></td><td>${item.uraian}</td><td>${item.temuan || '-'}</td><td>${item.tindakan || '-'}</td></tr>`;            });            document.getElementById('mr-table-body').innerHTML = rows;            document.getElementById('mr-sign-date-text').innerText = `Tarempa, ${formatDateIndo(new Date())}`;            document.getElementById('mr-period-text').innerText = "SEMUA WAKTU";                        // CETAK REKAP -> LANDSCAPE (SOLUSI AGAR LEBIH LEBAR)            printContent('print-template-recap', 'landscape');        }    </script></head><body>    <!-- LOGIN OVERLAY -->    <div id="login-overlay">        <div class="login-card">            <div class="lc-logo">👮</div>            <h2 class="lc-title">SiKERIS</h2>            <p class="lc-sub">Sistem Kinerja Elektronik &<br>Riwayat Informasi Satpol</p>            <form id="form-login">                <div class="form-group" style="text-align:left;"><label class="form-label">Username</label><input type="text" id="l-user" class="form-input" placeholder="Username" required></div>                <div class="form-group" style="text-align:left;"><label class="form-label">Password</label><input type="password" id="l-pass" class="form-input" placeholder="Password" required></div>                <button class="btn-submit" type="submit">MASUK APLIKASI</button>            </form>        </div>    </div>    <!-- HEADER -->    <div class="app-header">        <div class="header-row">            <div class="brand-text"><span>SATPOL PP ANAMBAS</span><h1 style="font-size:1.6rem;">SiKERIS</h1></div>            <div style="display:flex; gap:10px;">                 <div class="btn-header-icon" onclick="doLogout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>                <div class="btn-header-icon" onclick="switchTab('settings')"><svg class="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>            </div>        </div>    </div>    <!-- HOME WIDGETS -->    <div id="home-widgets">        <div class="stats-wrapper">            <div class="stat-card"><div class="stat-head">Laporan Masuk</div><div class="stat-val" id="stat-total">0</div></div>            <div class="stat-card stat-today"><div class="stat-head">Giat Hari Ini</div><div class="stat-val" id="stat-today">0</div><div class="stat-badge">UPDATE REALTIME</div></div>        </div>        <div class="chart-container">            <div class="section-title" style="align-self:flex-start; margin-bottom:10px;">Statistik Kegiatan</div>            <div class="chart-wrapper"><canvas id="activityChart" width="160" height="160"></canvas><div class="chart-center"><div class="cc-val" id="chart-total">0</div><div class="cc-label">Total</div></div></div>            <div class="chart-legend" id="chart-legend"></div>        </div>    </div>    <!-- VIEW SECTIONS -->    <div id="view-home" class="view-section main-container"><div class="section-title">Riwayat Terbaru</div><div id="list-home"></div></div>    <div id="view-archive" class="view-section main-container hidden" style="padding-top:2rem;">        <div class="section-title">Arsip & Rekapitulasi</div>        <div class="filter-bar">            <div class="filter-row"><input type="date" id="f-start" class="filter-input" placeholder="Dari"><input type="date" id="f-end" class="filter-input" placeholder="Sampai"></div>            <select id="f-cat" class="filter-input"><option value="">Semua Kategori</option><option value="Patroli">Patroli</option><option value="Penegakan Perda">Penegakan Perda</option><option value="Trantibum">Trantibum</option><option value="PAM/WAL">PAM/WAL</option><option value="Sosialisasi">Sosialisasi</option><option value="Deteksi Dini">Deteksi Dini</option></select>            <div class="filter-row"><button onclick="filterReports()" class="btn-filter" style="flex:1">🔍 Filter Data</button><button onclick="resetFilter()" class="btn-filter" style="background:var(--line); color:var(--text-sub)">↻</button></div>            <div class="filter-row"><button onclick="printRecap()" class="btn-recap" style="flex:1">🖨️ Cetak Rekap PDF</button><button onclick="exportToCSV()" class="btn-export" style="flex:1">Ekspor Excel</button></div>        </div>        <div id="list-archive"></div>    </div>    <div id="view-settings" class="view-section main-container hidden" style="padding-top:2rem;">        <div class="tabs"><div id="tab-members" class="tab active" onclick="switchMgmtTab('members')">Anggota</div><div id="tab-users" class="tab" onclick="switchMgmtTab('users')">Akun Akses</div></div>        <div id="mgmt-members"><div id="list-members"></div></div>        <div id="mgmt-users" class="hidden"><div id="list-users"></div></div>        <div style="margin-top:30px; padding:20px; text-align:center; border-top:1px dashed var(--line);"><button onclick="DB.reset()" class="btn-del" style="width:100%; padding:15px;">🗑️ KOSONGKAN DATABASE</button></div>    </div>    <!-- BOTTOM NAV -->    <div class="bottom-nav">        <button class="nav-btn active" id="nav-home" onclick="switchTab('home')">🏠<br>Beranda</button>        <div class="fab-center" onclick="openMenu()">+</div>        <button class="nav-btn" id="nav-archive" onclick="switchTab('archive')">📂<br>Arsip</button>    </div>    <!-- MODAL MENU -->    <div id="modal-menu" class="modal"><div class="modal-content" style="height:auto; max-height:70vh;"><div class="m-head"><h3 class="m-title">Kegiatan</h3><button class="m-close" onclick="closeModal('modal-menu')">X</button></div><div class="m-body menu-grid"><div class="menu-item" onclick="startReport('Patroli')"><div class="mi-icon">🚔</div><span class="mi-text">Patroli</span></div><div class="menu-item" onclick="startReport('Penegakan Perda')"><div class="mi-icon">⚖️</div><span class="mi-text">Gakda</span></div><div class="menu-item" onclick="startReport('Trantibum')"><div class="mi-icon">🛡️</div><span class="mi-text">Trantibum</span></div><div class="menu-item" onclick="startReport('PAM/WAL')"><div class="mi-icon">👮</div><span class="mi-text">PAM/WAL</span></div><div class="menu-item" onclick="startReport('Sosialisasi')"><div class="mi-icon">📢</div><span class="mi-text">Sosialisasi</span></div><div class="menu-item" onclick="startReport('Deteksi Dini')"><div class="mi-icon">👁️</div><span class="mi-text">Deteksi</span></div></div></div></div>    <!-- MODAL REPORT -->    <div id="modal-report" class="modal"><div class="modal-content"><div class="m-head"><h3 class="m-title" id="rep-title">Lapor</h3><button class="m-close" onclick="closeModal('modal-report')">X</button></div><div class="m-body"><form id="form-report">        <div class="form-group"><label class="form-label">Judul</label><input type="text" id="i-judul" class="form-input" required></div>        <div class="form-group"><label class="form-label">Lokasi</label><input type="text" id="i-lokasi" class="form-input" required></div>        <div class="form-group"><label class="form-label">Target</label><input type="text" id="i-target" class="form-input"></div>        <div class="form-group"><label class="form-label">Perda (Opsional)</label><input type="text" id="i-perda" class="form-input"></div>        <div class="form-group"><label class="form-label">Personil</label><input type="text" id="search-personil" class="form-input" placeholder="Cari Nama..."><div id="list-personil" class="personnel-list"></div></div>        <div class="form-group"><label class="form-label">Uraian</label><textarea id="i-uraian" class="form-input" rows="4" required></textarea></div>        <div class="form-group"><label class="form-label">Temuan</label><textarea id="i-temuan" class="form-input" rows="3"></textarea></div>        <div class="form-group"><label class="form-label">Tindakan</label><input type="text" id="i-tindakan" class="form-input"></div>        <div class="form-group"><label class="form-label">Situasi</label><input type="text" id="i-situasi" class="form-input" value="Aman Terkendali"></div>        <div class="form-group" style="margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1.5rem;">            <label class="form-label">Dokumentasi</label>            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">                <label style="height:100px;background:var(--bg);display:flex;justify-content:center;align-items:center;border-radius:12px;overflow:hidden;border:1px dashed var(--accent);"><img id="prev1" style="width:100%;height:100%;object-fit:cover;display:none;"><span style="font-size:0.7rem;position:absolute;">FOTO 1</span><input type="file" hidden accept="image/*" onchange="handleReportPhoto(this,1)"></label>                <label style="height:100px;background:var(--bg);display:flex;justify-content:center;align-items:center;border-radius:12px;overflow:hidden;border:1px dashed var(--accent);"><img id="prev2" style="width:100%;height:100%;object-fit:cover;display:none;"><span style="font-size:0.7rem;position:absolute;">FOTO 2</span><input type="file" hidden accept="image/*" onchange="handleReportPhoto(this,2)"></label>            </div>        </div>        <button class="btn-submit" type="submit">SIMPAN</button>    </form></div></div></div>    <!-- MODAL MEMBER -->    <div id="modal-member" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title" id="mem-modal-title">Anggota</h3><button class="m-close" onclick="closeModal('modal-member')">X</button></div><div class="m-body"><form id="form-mem">        <label class="photo-circle-large"><img id="m-prev" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjY2JkNWUxIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNCIvPjxwYXRoIGQ9Ik02IDIxdjYtM2E2IDYgMCAwIDEgMTItM3YzYTYgNiAwIDAgMS02IDN6Ii8+PC9zdmc+"><div class="photo-overlay"><span>UPLOAD</span></div><input type="file" hidden accept="image/*" onchange="handleMemberPhoto(this)"></label>        <div class="form-group"><label class="form-label">Nama</label><input type="text" id="m-nama" class="form-input" required></div>        <div class="form-group"><label class="form-label">NIP</label><input type="text" id="m-nip" class="form-input"></div>        <div class="form-group"><label class="form-label">Pangkat</label><input type="text" id="m-pangkat" class="form-input"></div>        <div class="form-group"><label class="form-label">Jabatan</label><input type="text" id="m-jab" class="form-input"></div>        <button class="btn-submit" type="submit">SIMPAN</button>    </form></div></div></div>    <!-- MODAL DETAIL -->    <div id="modal-detail" class="modal"><div class="modal-content" style="height:auto; max-height:85vh;"><div class="m-head"><h3 class="m-title">Detail</h3><div style="display:flex;gap:10px;"><button onclick="shareViaWA()" class="m-close" style="width:auto;padding:0 10px;font-size:0.7rem;background:#dcfce7;color:#166534;gap:5px;"><span id="share-spinner" class="spinner" style="width:14px;height:14px;border-color:#166534;border-top-color:transparent;"></span><span id="share-text">Bagikan WA</span></button><button class="m-close" onclick="closeModal('modal-detail')">X</button></div></div>        <div class="m-body" style="padding-bottom:100px;"><div class="modern-modal-card">            <div class="mm-header"><h4 id="mm-kategori">KAT</h4><h2 id="mm-judul">Judul</h2></div>            <div class="mm-body">                <div class="mm-grid"><div class="mm-box"><label>Waktu</label><span id="mm-date"></span><br><span id="mm-time" style="font-size:0.8rem"></span></div><div class="mm-box"><label>Lokasi</label><span id="mm-loc"></span></div></div>                <div class="mm-box" style="margin-bottom:1rem;background:#f0fdf4;border-color:#bbf7d0;"><label style="color:#166534">Status</label><span id="mm-status" style="color:#15803d"></span></div>                <div style="margin-bottom:1rem;"><label class="dr-label">Uraian</label><p id="mm-uraian" style="font-size:0.9rem;line-height:1.5;"></p></div>                <div id="mm-temuan-block" style="margin-bottom:1rem;display:none;"><label class="dr-label">Temuan</label><p id="mm-temuan" style="font-size:0.9rem;line-height:1.5;"></p></div>                <div style="margin-bottom:1rem;"><label class="dr-label">Tindakan</label><p id="mm-tindakan" style="font-size:0.9rem;line-height:1.5;"></p></div>                <label class="dr-label">Dokumentasi</label><div id="mm-photos" class="mm-photo-grid"></div>            </div>        </div></div></div>    </div>        <!-- MODAL USER & MEMBER DETAIL OMITTED FOR BREVITY BUT FUNCTIONS PRESENT IN JS -->    <div id="modal-user" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title">Akun</h3><button class="m-close" onclick="closeModal('modal-user')">X</button></div><div class="m-body"><form id="form-user"><div class="form-group"><label class="form-label">User</label><input type="text" id="u-name" class="form-input" required></div><div class="form-group"><label class="form-label">Pass</label><input type="text" id="u-pass" class="form-input" required></div><button class="btn-submit">SIMPAN</button></form></div></div></div>    <div id="modal-member-detail" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title">Detail</h3><button class="m-close" onclick="closeModal('modal-member-detail')">X</button></div><div class="m-body"><div style="text-align:center;margin-bottom:1.5rem;"><img id="dm-img" src="" style="width:120px;height:120px;border-radius:50%;object-fit:cover;"></div><div class="detail-row"><div class="dr-label">Nama</div><div class="dr-val" id="dm-name"></div></div><div class="detail-row"><div class="dr-label">NIP</div><div class="dr-val" id="dm-nip"></div></div><div class="detail-row"><div class="dr-label">Pangkat</div><div class="dr-val" id="dm-pangkat"></div></div><div class="detail-row" style="border:none"><div class="dr-label">Jabatan</div><div class="dr-val" id="dm-jab"></div></div></div></div></div>    <!-- ============================================================== -->    <!-- TEMPLATE HTML UNTUK PRINT (TERSEMBUNYI DARI VIEW UTAMA) -->    <!-- ============================================================== -->    <div style="display:none;">        <!-- 1. Template Laporan Satuan -->        <div id="print-template-single">            <div class="mp-container">                <div class="mp-watermark">SATPOL PP</div>                <div class="mp-header"><div class="mp-brand"><span>Satpol PP Anambas</span><h1>SIKERIS</h1></div><div class="mp-meta-box"><div class="mp-id" id="mp-id">#RPT</div><div class="mp-date" id="mp-date-top">Date</div></div></div>                <div class="mp-hero"><div class="mp-title-block"><span class="mp-category" id="mp-cat">CAT</span><h2 class="mp-main-title" id="mp-title">Title</h2></div><div class="mp-status-badge" id="mp-status">Stat</div></div>                <div class="mp-grid"><div class="mp-card"><span class="mp-label">Waktu</span><div class="mp-val" id="mp-time">Time</div></div><div class="mp-card"><span class="mp-label">Lokasi</span><div class="mp-val" id="mp-loc">Loc</div></div><div class="mp-card"><span class="mp-label">Sasaran</span><div class="mp-val" id="mp-target">-</div></div><div class="mp-card" id="mp-perda-box" style="display:none"><span class="mp-label">Perda</span><div class="mp-val" id="mp-perda">-</div></div></div>                <div class="mp-section"><div class="mp-section-head">Uraian Kejadian</div><div class="mp-text" id="mp-uraian"></div></div>                <div class="mp-section" id="mp-section-temuan"><div class="mp-section-head">Temuan</div><div class="mp-text" id="mp-temuan"></div></div>                <div class="mp-section"><div class="mp-section-head">Tindakan</div><div class="mp-text" id="mp-tindakan"></div></div>                <div class="mp-section"><div class="mp-section-head">Personil</div><div class="mp-chips" id="mp-personnel"></div></div>                <div class="mp-photos-container"><div class="mp-section-head">Dokumentasi</div><div class="mp-photos" id="mp-photos"></div></div>                <div class="mp-footer"><div class="mp-sign-box"><div style="font-size:10pt;color:#666;margin-bottom:40px;" id="mp-sign-date">Tarempa, ...</div><div style="font-size:11pt;font-weight:bold;border-bottom:1px solid #ccc;display:inline-block;">Petugas Pelaksana</div></div><div class="mp-qr-box"><div style="text-align:right;"><div style="font-size:8pt;font-weight:700;color:#1b4d3e;">VERIFIKASI DIGITAL</div><div style="font-size:7pt;color:#94a3b8;">Dokumen sah sistem</div></div><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=VALID" class="mp-qr-code"></div></div>            </div>        </div>        <!-- 2. Template Rekapitulasi -->        <div id="print-template-recap">            <div class="mr-container">                <div class="mr-header"><div class="mr-brand"><span>Satpol PP Anambas</span><h1>SIKERIS</h1></div><div class="mr-title-box"><h2 class="mr-title-main">Rekapitulasi</h2><div class="mr-period">PERIODE: <span id="mr-period-text"></span></div></div></div>                <table class="mr-table"><thead><tr><th width="30">No</th><th width="100">Waktu</th><th width="90">Kategori</th><th width="150">Judul</th><th>Uraian</th><th>Temuan</th><th>Tindakan</th></tr></thead><tbody id="mr-table-body"></tbody></table>                <div class="mr-footer"><div class="mr-sign-box"><div class="mr-sign-date" id="mr-sign-date-text">Tarempa, ...</div><div class="mr-sign-title">Mengetahui,</div><br><br><br><div class="mr-sign-name">( .......................... )</div></div></div>            </div>        </div>    </div></body></html>
