@@ -83,6 +83,12 @@
         .btn-header-icon { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); z-index: 20; position: relative; transition: 0.2s; width: 40px; height: 40px; color: var(--accent); margin-left: 8px; backdrop-filter: blur(4px); }
         .btn-header-icon:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
         .btn-header-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+        
+        .user-pill {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700;
+            color: var(--accent); margin-top: 5px; width: fit-content; display: flex; align-items: center; gap: 5px;
+        }
 
         /* --- WIDGETS & CHART --- */
         #home-widgets { display: block; }
@@ -224,7 +230,8 @@
         .form-input { width: 100%; padding: 16px; border-radius: 16px; border: 2px solid transparent; background: var(--input-bg); font-family: inherit; font-size: 1rem; color: var(--text); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 2px 5px rgba(0,0,0,0.02) inset; }
         .form-input:focus { background: #ffffff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(40, 75, 64, 0.15); outline: none; }
         .form-input::placeholder { color: #94a3b8; font-weight: 500; }
-        
+        .form-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
+
         .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .upload-box { height: 130px; background: var(--input-bg); border: 2px dashed #cbd5e1; border-radius: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; transition: 0.2s; cursor: pointer; }
         .upload-box:active { background: #e2e8f0; border-color: var(--primary); }
@@ -280,6 +287,13 @@
         
         /* --- STYLE CSS UNTUK PRINT IFRAME --- */
         #print-css-source { display: none; }
+        
+        /* --- STYLE KHUSUS: UTILS --- */
+        .user-pill {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700;
+            color: var(--accent); margin-top: 5px; width: fit-content; display: flex; align-items: center; gap: 5px;
+        }
     </style>
     
     <!-- CSS UNTUK PRINT DENGAN KARTU WARNA -->
@@ -338,9 +352,12 @@
         .mp-photo-box img { width: 100%; height: 180px; object-fit: cover; border-radius: 4px; display: block; }
         .mp-caption { text-align: center; font-size: 7.5pt; color: #64748b; font-weight: 700; padding: 8px 0 2px; text-transform: uppercase; }
         
-        .mp-footer { margin-top: 40px; padding-top: 15px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; break-inside: avoid; }
-        .mp-sign-box { text-align: left; }
-        .mp-qr-box { text-align: right; display: flex; align-items: center; gap: 10px; }
+        .mp-footer { margin-top: 40px; padding-top: 15px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-start; break-inside: avoid; }
+        .mp-sign-box { text-align: left; width: 60%; }
+        .mp-sign-role { font-size: 11pt; font-weight: bold; border-bottom: 1px solid #ccc; display: inline-block; margin-bottom: 4px; }
+        .mp-sign-nip { font-size: 9pt; font-weight: 600; color: #64748b; }
+        
+        .mp-qr-box { text-align: right; display: flex; align-items: center; gap: 10px; width: 40%; justify-content: flex-end; }
         .mp-qr-code { width: 55px; height: 55px; border-radius: 4px; border: 1px solid #e2e8f0; padding: 3px; background: white; }
         
         .mr-container { width: 100%; margin: 0 auto; background: white; padding: 10px; box-sizing: border-box; }
@@ -494,6 +511,19 @@
             };
         }
 
+        // --- SECURITY UTILS: PASSWORD HASHING ---
+        async function hashPassword(str) {
+            // Encode string to Uint8Array
+            const msgUint8 = new TextEncoder().encode(str);
+            // Hash the message using SHA-256
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            // Convert buffer to byte array
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            // Convert bytes to hex string
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
         function escapeJson(obj) { return JSON.stringify(obj).replace(/'/g, "&apos;").replace(/"/g, "&quot;"); }
 
         function formatDateIndo(dateStr) {
@@ -520,14 +550,36 @@
         async function doLogin() {
             const u = document.getElementById('l-user').value;
             const p = document.getElementById('l-pass').value;
-            const users = await DB.getAll('users');
-            const found = users.find(x => x.user === u && x.pass === p);
             
-            if((u === 'admin' && p === 'admin') || found) {
+            // HASH INPUT PASSWORD SEBELUM CEK
+            const inputHash = await hashPassword(p);
+            
+            // ADMIN HASH (password: 'admin')
+            // SHA-256 of 'admin' -> 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+            const adminHash = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+
+            const users = await DB.getAll('users');
+            
+            // CEK USER BIASA MENGGUNAKAN HASH
+            const found = users.find(x => x.user === u && x.pass === inputHash);
+            
+            if((u === 'admin' && inputHash === adminHash) || found) {
                 document.getElementById('login-overlay').classList.add('hidden');
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('currentUser', u);
-                showToast("Berhasil Masuk");
+                
+                // SIMPAN SESI DETAIL ANGGOTA UNTUK TANDA TANGAN
+                if(found && found.memberId) {
+                    localStorage.setItem('userNama', found.nama || u);
+                    localStorage.setItem('userNip', found.nip || '-');
+                    localStorage.setItem('userJab', found.jabatan || 'Anggota');
+                } else {
+                    localStorage.setItem('userNama', 'Administrator');
+                    localStorage.setItem('userNip', '');
+                    localStorage.setItem('userJab', 'Admin Sistem');
+                }
+                updateHeaderInfo();
+                showToast(`Selamat Datang, ${localStorage.getItem('userNama')}`);
             } else {
                 showToast("Login Gagal! Cek Username/Password");
             }
@@ -535,7 +587,7 @@
 
         function doLogout() {
             if(window.confirm('Keluar dari aplikasi SiKERIS?')) {
-                localStorage.removeItem('isLoggedIn');
+                localStorage.clear(); // Bersihkan semua sesi
                 location.reload();
             }
         }
@@ -543,8 +595,23 @@
         function checkLogin() {
             if(localStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-overlay').classList.add('hidden');
+                updateHeaderInfo();
             } else {
                 document.getElementById('login-overlay').classList.remove('hidden');
+            }
+        }
+        
+        function updateHeaderInfo() {
+            const uName = localStorage.getItem('userNama') || 'Petugas';
+            const currentUser = localStorage.getItem('currentUser');
+            document.getElementById('header-user-name').innerText = uName;
+            
+            // LOGIKA HAK AKSES SETTINGS (HANYA ADMIN)
+            const settingsBtn = document.getElementById('btn-settings');
+            if(currentUser !== 'admin') {
+                settingsBtn.style.display = 'none';
+            } else {
+                settingsBtn.style.display = 'flex';
             }
         }
 
@@ -661,7 +728,7 @@
         function openModal(id) { document.getElementById(id).classList.add('show'); }
         function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-        function openAddMgmt() {
+        async function openAddMgmt() {
             if(currentMgmtTab === 'members') {
                 editingId = null; photoBase64 = null;
                 document.getElementById('form-mem').reset();
@@ -670,6 +737,12 @@
                 openModal('modal-member');
             } else {
                 document.getElementById('form-user').reset();
+                // POPULATE MEMBER SELECT
+                const members = await DB.getAll('members');
+                const select = document.getElementById('u-member');
+                select.innerHTML = '<option value="">-- Pilih Anggota --</option>' + 
+                    members.map(m => `<option value="${m.id}" data-nama="${m.nama}" data-nip="${m.nip}" data-jab="${m.jabatan}">${m.nama} (${m.nip||'-'})</option>`).join('');
+                
                 openModal('modal-user');
             }
         }
@@ -738,24 +811,46 @@
                 </div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada anggota.</p>';
         }
 
-        // --- 8. LOGIC USER ---
+        // --- 8. LOGIC USER (SECURE HASHING ADDED) ---
         async function saveUser(e) {
             e.preventDefault();
-            const uName = document.getElementById('u-name').value;
+            const memberSelect = document.getElementById('u-member');
             const uPass = document.getElementById('u-pass').value;
-            if (uName === 'admin') return;
-            await DB.add('users', { user: uName, pass: uPass });
+            
+            if(memberSelect.value === "") { showToast("Pilih Anggota Terlebih Dahulu"); return; }
+            
+            const selectedOption = memberSelect.options[memberSelect.selectedIndex];
+            const memberId = memberSelect.value;
+            const nama = selectedOption.getAttribute('data-nama');
+            const nip = selectedOption.getAttribute('data-nip');
+            const jab = selectedOption.getAttribute('data-jab');
+            
+            // Username otomatis nama depan kecil
+            const uName = nama.split(' ')[0].toLowerCase() + (Math.floor(Math.random() * 100));
+
+            // HASH PASSWORD SEBELUM SIMPAN
+            const passHash = await hashPassword(uPass);
+
+            await DB.add('users', { user: uName, pass: passHash, memberId: memberId, nama: nama, nip: nip, jabatan: jab });
             closeModal('modal-user'); loadUsers();
-            showToast("User disimpan");
+            showToast(`User ${uName} dibuat`);
         }
 
         async function loadUsers() {
             const d = await DB.getAll('users');
+            // MASKING PASSWORD
             document.getElementById('list-users').innerHTML = d.length ? d.map(u => `
-                <div class="mgmt-item fade-in"><div class="mi-info"><div class="mi-name">User: ${u.user}</div><div class="mi-sub">Pass: ${u.pass}</div></div><button onclick="deleteUser('${u.id}')" class="btn-icon btn-red">🗑️</button></div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada akun tambahan.</p>';
+                <div class="mgmt-item fade-in">
+                    <div class="mi-info">
+                        <div class="mi-name">${u.nama || 'User'}</div>
+                        <div class="mi-sub" style="color:var(--primary);font-weight:bold;">Login: ${u.user} / ******</div>
+                        <div class="mi-sub">${u.nip || '-'}</div>
+                    </div>
+                    <button onclick="deleteUser('${u.id}')" class="btn-icon btn-red">🗑️</button>
+                </div>`).join('') : '<p style="text-align:center;color:#ccc;margin-top:20px;">Belum ada akun akses.</p>';
         }
 
-        async function deleteUser(id) { if(window.confirm('Hapus user?')) { await DB.delete('users', id); loadUsers(); } }
+        async function deleteUser(id) { if(window.confirm('Hapus akses user ini?')) { await DB.delete('users', id); loadUsers(); } }
 
         // --- 9. LOGIC LAPORAN ---
         async function startReport(cat) {
@@ -812,18 +907,34 @@
             e.preventDefault();
             const checks = document.querySelectorAll('.chk-person:checked');
             const personil = []; checks.forEach(c => personil.push(JSON.parse(c.value)));
+            const currentUser = localStorage.getItem('currentUser');
             
             let currentPhoto1 = photo1; let currentPhoto2 = photo2;
+            let creator = currentUser; // Default creator
+
             if (editingId) { 
                  const oldReport = currentReports.find(r => r.id === editingId) || (await DB.getAll('reports')).find(r => r.id === editingId); 
                  if (oldReport) {
                     if (!currentPhoto1) currentPhoto1 = oldReport.foto1;
-                    if (!currentPhoto2) currentPhoto2 = oldReport.foto2; 
+                    if (!currentPhoto2) currentPhoto2 = oldReport.foto2;
+                    creator = oldReport.createdBy || currentUser; // Keep original creator or set if missing
                  }
             }
 
             const d = {
-                kategori: selectedCategory, judul: document.getElementById('i-judul').value, lokasi: document.getElementById('i-lokasi').value, target: document.getElementById('i-target').value, uraian: document.getElementById('i-uraian').value, temuan: document.getElementById('i-temuan').value, tindakan: document.getElementById('i-tindakan').value, situasi: document.getElementById('i-situasi').value, perda: document.getElementById('i-perda').value, personil: personil, foto1: currentPhoto1, foto2: currentPhoto2
+                kategori: selectedCategory, 
+                judul: document.getElementById('i-judul').value, 
+                lokasi: document.getElementById('i-lokasi').value, 
+                target: document.getElementById('i-target').value, 
+                uraian: document.getElementById('i-uraian').value, 
+                temuan: document.getElementById('i-temuan').value, 
+                tindakan: document.getElementById('i-tindakan').value, 
+                situasi: document.getElementById('i-situasi').value, 
+                perda: document.getElementById('i-perda').value, 
+                personil: personil, 
+                foto1: currentPhoto1, 
+                foto2: currentPhoto2,
+                createdBy: creator // SAVE OWNERSHIP
             };
 
             if(editingId) { await DB.update('reports', editingId, d); }
@@ -871,6 +982,7 @@
             let d = await DB.getAll('reports');
             const startStr = document.getElementById('f-start').value;
             const endStr = document.getElementById('f-end').value;
+            const currentUser = localStorage.getItem('currentUser');
             
             // Get Checked Categories
             const checkedCats = Array.from(document.querySelectorAll('.ms-checkbox:checked')).map(c => c.value);
@@ -896,11 +1008,23 @@
                 const date = new Date(i.createdAt); const month = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"]; const str = escapeJson(i);
                 const cardClass = `card-pastel-${(idx % 5) + 1}`;
                 
+                // LOGIKA HAK AKSES EDIT/DELETE
+                // Admin bisa edit/hapus semua. User biasa hanya punya dia sendiri.
+                // Jika createdBy undefined (data lama), anggap milik admin.
+                const isOwner = (i.createdBy === currentUser) || (currentUser === 'admin');
+                const actionButtons = isOwner 
+                    ? `<button onclick='editReport(${str})' class="action-btn">✏️ Edit</button><button onclick="deleteReport('${i.id}', '${i.createdBy}')" class="action-btn btn-del-icon">🗑️</button>` 
+                    : ''; // Kosongkan jika bukan pemilik
+
                 return `
                 <div class="report-card fade-in ${cardClass}">
                     <div class="rc-date"><div class="rc-time">${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</div><div class="rc-day">${date.getDate()} ${month[date.getMonth()]}</div></div>
                     <div class="rc-info"><span class="rc-badge">${i.kategori}</span><div class="rc-title">${i.judul}</div><div class="rc-desc">${i.uraian}</div>
-                        <div class="card-actions"><button onclick='viewDetail(${str})' class="action-btn">👁️ Lihat</button><button onclick='printReport(${str})' class="action-btn">🖨️ Cetak</button><button onclick='editReport(${str})' class="action-btn">✏️ Edit</button><button onclick="deleteReport('${i.id}')" class="action-btn btn-del-icon">🗑️</button></div>
+                        <div class="card-actions">
+                            <button onclick='viewDetail(${str})' class="action-btn">👁️ Lihat</button>
+                            <button onclick='printReport(${str})' class="action-btn">🖨️ Cetak</button>
+                            ${actionButtons}
+                        </div>
                     </div>
                 </div>`;
             };
@@ -933,9 +1057,25 @@
             document.getElementById('list-home').innerHTML = allReports.length ? allReports.slice(0,5).map((item, idx) => htmlHome(item, idx)).join('') : '<div style="text-align:center;margin-top:20px;color:#ccc"><p>Belum ada kegiatan.</p></div>';
         }
 
-        async function deleteReport(id) { if(window.confirm('Hapus laporan?')) { await DB.delete('reports', id); loadReports(); showToast("Laporan dihapus"); } }
+        async function deleteReport(id, owner) { 
+            const currentUser = localStorage.getItem('currentUser');
+            // Validasi Server-Side (Logic Side)
+            if (currentUser !== 'admin' && currentUser !== owner) {
+                showToast("Anda tidak memiliki hak akses!");
+                return;
+            }
+
+            if(window.confirm('Hapus laporan?')) { await DB.delete('reports', id); loadReports(); showToast("Laporan dihapus"); } 
+        }
 
         async function editReport(i) {
+            const currentUser = localStorage.getItem('currentUser');
+            // Validasi Edit
+            if (currentUser !== 'admin' && currentUser !== i.createdBy) {
+                showToast("Anda tidak berhak mengedit laporan ini.");
+                return;
+            }
+
             await startReport(i.kategori); 
             document.getElementById('rep-title').innerText = `Edit Laporan: ${i.judul}`; editingId = i.id;
             document.getElementById('i-judul').value = i.judul; document.getElementById('i-lokasi').value = i.lokasi; document.getElementById('i-target').value = i.target; document.getElementById('i-uraian').value = i.uraian; document.getElementById('i-temuan').value = i.temuan || ''; document.getElementById('i-tindakan').value = i.tindakan; document.getElementById('i-situasi').value = i.situasi; document.getElementById('i-perda').value = i.perda || '';
@@ -1067,7 +1207,13 @@
              } 
              document.getElementById('mp-personnel').innerHTML = pHtml;
             
+            // --- AUTOMATIC SIGNATURE LOGIC ---
+            const signName = localStorage.getItem('userNama') || "Petugas Pelaksana";
+            const signNip = localStorage.getItem('userNip') || "-";
+            
             document.getElementById('mp-sign-date').innerText = `Tarempa, ${dateStr}`;
+            document.getElementById('mp-sign-name').innerText = signName;
+            document.getElementById('mp-sign-nip').innerText = `NIP. ${signNip}`;
             
             printContent('print-template-single', 'portrait');
         }
@@ -1079,6 +1225,10 @@
             });
             document.getElementById('mr-table-body').innerHTML = rows;
             document.getElementById('mr-sign-date-text').innerText = `Tarempa, ${formatDateIndo(new Date())}`;
+            
+            // AUTOMATIC SIGNATURE RECAP
+            const signName = localStorage.getItem('userNama') || "Petugas Pelaksana";
+            document.getElementById('mr-sign-name').innerText = `( ${signName} )`;
             
             // DYNAMIC TITLE BASED ON SELECTION
             const checked = Array.from(document.querySelectorAll('.ms-checkbox:checked')).map(c => c.value);
@@ -1115,10 +1265,12 @@
                 <span class="brand-top-text">SATPOL PP<br>KAB. KEP. ANAMBAS</span>
                 <h1 class="brand-logo-main">SiKERIS</h1>
                 <div class="brand-sub-text">Sistem Kinerja Elektronik & Riwayat Informasi Satpol</div>
+                <div class="user-pill">👤 <span id="header-user-name">Petugas</span></div>
             </div>
             <div style="display:flex; gap:10px;"> 
                 <div class="btn-header-icon" onclick="doLogout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>
-                <div class="btn-header-icon" onclick="switchTab('settings')"><svg class="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>
+                <!-- ID TAMBAHAN UNTUK SETTINGS -->
+                <div id="btn-settings" class="btn-header-icon" onclick="switchTab('settings')"><svg class="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>
             </div>
         </div>
     </div>
@@ -1260,7 +1412,18 @@
         </div></div></div>
     </div>
     
-    <div id="modal-user" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title">Akun</h3><button class="m-close" onclick="closeModal('modal-user')">X</button></div><div class="m-body"><form id="form-user"><div class="form-group"><label class="form-label">User</label><input type="text" id="u-name" class="form-input" required></div><div class="form-group"><label class="form-label">Pass</label><input type="text" id="u-pass" class="form-input" required></div><button class="btn-submit">SIMPAN</button></form></div></div></div>
+    <!-- MODAL USER BARU (UPDATED UNTUK SELECT ANGGOTA) -->
+    <div id="modal-user" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title">Akses Baru</h3><button class="m-close" onclick="closeModal('modal-user')">X</button></div><div class="m-body"><form id="form-user">
+        <div class="form-group">
+            <label class="form-label">Pilih Anggota (Personil)</label>
+            <select id="u-member" class="form-input form-select" required>
+                <option value="">-- Pilih Anggota --</option>
+            </select>
+        </div>
+        <div class="form-group"><label class="form-label">Password Baru</label><input type="text" id="u-pass" class="form-input" placeholder="Minimal 4 Karakter" required></div>
+        <p style="font-size:0.75rem;color:#64748b;margin-bottom:1rem;">*Username akan dibuat otomatis dari nama depan.</p>
+        <button class="btn-submit">BUAT AKSES</button>
+    </form></div></div></div>
 
     <div id="modal-member-detail" class="modal"><div class="modal-content" style="height:auto;"><div class="m-head"><h3 class="m-title">Detail</h3><button class="m-close" onclick="closeModal('modal-member-detail')">X</button></div><div class="m-body"><div style="text-align:center;margin-bottom:1.5rem;"><img id="dm-img" src="" style="width:120px;height:120px;border-radius:50%;object-fit:cover;"></div><div class="detail-row"><div class="dr-label">Nama</div><div class="dr-val" id="dm-name"></div></div><div class="detail-row"><div class="dr-label">NIP</div><div class="dr-val" id="dm-nip"></div></div><div class="detail-row"><div class="dr-label">Pangkat</div><div class="dr-val" id="dm-pangkat"></div></div><div class="detail-row" style="border:none"><div class="dr-label">Jabatan</div><div class="dr-val" id="dm-jab"></div></div></div></div></div>
 
@@ -1292,7 +1455,23 @@
                 
                 <div class="mp-photos-container"><div class="mp-section-head">Dokumentasi</div><div class="mp-photos" id="mp-photos"></div></div>
                 
-                <div class="mp-footer"><div class="mp-sign-box"><div style="font-size:10pt;color:#666;margin-bottom:40px;" id="mp-sign-date">Tarempa, ...</div><div style="font-size:11pt;font-weight:bold;border-bottom:1px solid #ccc;display:inline-block;">Petugas Pelaksana</div></div><div class="mp-qr-box"><div style="text-align:right;"><div style="font-size:8pt;font-weight:700;color:#284B40;">VERIFIKASI DIGITAL</div><div style="font-size:7pt;color:#94a3b8;">Dokumen sah sistem</div></div><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=VALID" class="mp-qr-code"></div></div>
+                <!-- OTOMATIS TANDA TANGAN -->
+                <div class="mp-footer">
+                    <div class="mp-sign-box">
+                        <div style="font-size:10pt;color:#666;margin-bottom:30px;" id="mp-sign-date">Tarempa, ...</div>
+                        <div style="font-size:10pt;font-weight:bold;margin-bottom:5px;">Petugas Pelaksana</div>
+                        <br><br><br>
+                        <div class="mp-sign-role" id="mp-sign-name">[Nama Petugas]</div>
+                        <div class="mp-sign-nip" id="mp-sign-nip">NIP. -</div>
+                    </div>
+                    <div class="mp-qr-box">
+                        <div style="text-align:right;">
+                            <div style="font-size:8pt;font-weight:700;color:#284B40;">VERIFIKASI DIGITAL</div>
+                            <div style="font-size:7pt;color:#94a3b8;">Dokumen sah sistem</div>
+                        </div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=VALID" class="mp-qr-code">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1301,11 +1480,10 @@
             <div class="mr-container">
                 <div class="mr-header"><div class="mr-brand"><span>Satpol PP Anambas</span><h1>SiKERIS</h1></div><div class="mr-title-box"><h2 class="mr-title-main">Rekapitulasi</h2><div class="mr-period">PERIODE: <span id="mr-period-text"></span></div></div></div>
                 <table class="mr-table"><thead><tr><th width="30">No</th><th width="100">Waktu</th><th width="90">Kategori</th><th width="150">Judul</th><th>Uraian</th><th>Temuan</th><th>Tindakan</th></tr></thead><tbody id="mr-table-body"></tbody></table>
-                <div class="mr-footer"><div class="mr-sign-box"><div class="mr-sign-date" id="mr-sign-date-text">Tarempa, ...</div><div class="mr-sign-title">Mengetahui,</div><br><br><br><div class="mr-sign-name">( .......................... )</div></div></div>
+                <div class="mr-footer"><div class="mr-sign-box"><div class="mr-sign-date" id="mr-sign-date-text">Tarempa, ...</div><div class="mr-sign-title">Mengetahui,</div><br><br><br><div class="mr-sign-name" id="mr-sign-name">( .......................... )</div></div></div>
             </div>
         </div>
     </div>
 </body>
 </html>
-
 
